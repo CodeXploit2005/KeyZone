@@ -7,6 +7,16 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { tursoDatabase } from './database.mjs';
+import { formatDate, parseDate, relativeExpiry, DAY } from './public/admin-time.js';
+
+test('typed expiry dates reject impossible dates and preserve local time', () => {
+  const leap = parseDate('29/02/2028 18:35');
+  assert.ok(leap); assert.equal(formatDate(leap), '29/02/2028 18:35');
+  for (const input of ['31/02/2028 12:00', '29/02/2027 12:00', '01/13/2028 12:00', '01/01/2028 24:00', '01/01/2028 12:70', 'tomorrow']) assert.equal(parseDate(input), null, input);
+  assert.equal(relativeExpiry('45', 'days', 0).getTime(), 45 * DAY);
+  assert.equal(relativeExpiry('12', 'hours', 0).getTime(), DAY / 2);
+  for (const value of ['', '0', '-1', '1.5', '3661']) assert.equal(relativeExpiry(value, 'days'), null);
+});
 
 function tursoFixture() {
   const sqlite = new DatabaseSync(':memory:');
@@ -55,6 +65,11 @@ for (const remote of [false, true]) test(`admin authentication, activation, devi
     const created = await request('/api/admin/keys', 'POST', fields);
     assert.equal(created.status, 201);
     const key = created.body.key, id = created.body.id, device = 'a'.repeat(64), other = 'b'.repeat(64);
+    assert.equal((await request('/api/admin/keys', 'POST', { ...fields, customKey: 'short' })).status, 400);
+    const custom = await request('/api/admin/keys', 'POST', { ...fields, customKey: 'kz-customer-manual-2026' });
+    assert.equal(custom.status, 201); assert.equal(custom.body.key, 'KZ-CUSTOMER-MANUAL-2026');
+    assert.equal((await request('/api/admin/keys', 'POST', { ...fields, customKey: 'KZ-CUSTOMER-MANUAL-2026' })).status, 409);
+    assert.equal((await request('/v1/activate', 'POST', { key: custom.body.key, device: other })).body.valid, true);
     assert.equal((await request('/api/admin/keys')).body.keys[0].key, undefined);
     assert.equal((await request('/v1/activate', 'POST', { key: 'WRONG', device })).status, 401);
     const activated = await request('/v1/activate', 'POST', { key, device });

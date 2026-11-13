@@ -44,6 +44,10 @@ Script build yêu cầu URL HTTPS và ghi `license-config.json` vào bộ cài. 
 
 ## Quản lý key
 
+Giao diện quản trị có bố cục desktop và mobile. Trên điện thoại, chuyển giữa Danh sách key và Tạo key bằng thanh điều hướng phía dưới; mỗi key hiển thị thành thẻ có nút gia hạn, thu hồi, gỡ máy.
+
+Thời hạn có thể chọn nhanh, tự nhập số ngày/giờ hoặc gõ ngày cụ thể theo `DD/MM/YYYY HH:mm` (múi giờ thiết bị). Trong cửa sổ gia hạn, có thể gõ ngày mới hoặc cộng thêm 7/30/90 ngày. Ô Key tùy chọn cho phép tự đặt mã 16–80 ký tự (chữ, số, dấu gạch ngang); mã được chuẩn hóa thành chữ hoa và từ chối nếu trùng. Để trống thì hệ thống vẫn sinh key ngẫu nhiên.
+
 - Tạo key với khách hàng, ngày giờ hết hạn và giới hạn thiết bị. Key đầy đủ chỉ hiện một lần; hãy sao chép trước khi đóng.
 - Thu hồi: các lần xác minh sau bị từ chối. Form ứng dụng kiểm tra mỗi 20 giây, khi lấy lại focus và khóa khi hết hạn. API và mỗi tác vụ nền mới kiểm tra trực tuyến riêng. Tác vụ đã chạy có thể hoàn tất; chưa có cơ chế hủy giữa chừng.
 - Gia hạn/sửa cũng khôi phục key đã thu hồi. Gỡ thiết bị buộc các máy nhập lại key.

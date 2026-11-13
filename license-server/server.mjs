@@ -62,8 +62,8 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
     const send = (data, status = 200) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(data)); };
     try {
       const url = new URL(req.url, origin);
-      if (req.method === 'GET' && ['/admin', '/admin/', '/admin.js', '/admin.css', ...(!siteDirectory ? ['/'] : [])].includes(url.pathname)) {
-        const file = url.pathname.endsWith('.js') ? 'admin.js' : url.pathname.endsWith('.css') ? 'admin.css' : 'index.html';
+      if (req.method === 'GET' && ['/admin', '/admin/', '/admin.js', '/admin-time.js', '/admin.css', ...(!siteDirectory ? ['/'] : [])].includes(url.pathname)) {
+        const file = url.pathname.endsWith('.js') ? url.pathname.slice(1) : url.pathname.endsWith('.css') ? 'admin.css' : 'index.html';
         res.writeHead(200, { 'Content-Type': file.endsWith('.js') ? 'text/javascript; charset=utf-8' : file.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/html; charset=utf-8' });
         return res.end(readFileSync(join(publicDir, file)));
       }
@@ -91,9 +91,13 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
         if (req.method === 'POST' && url.pathname === '/api/admin/keys') {
           await initialize();
           const data = await body(req); const [customer, expires, devices] = fields(data);
-          const key = 'KZ-' + randomBytes(20).toString('hex').toUpperCase().match(/.{1,8}/g).join('-');
+          if (data.customKey !== undefined && typeof data.customKey !== 'string') fail('Key tùy chọn không hợp lệ.');
+          const customKey = data.customKey?.trim().toUpperCase();
+          if (customKey && !/^[A-Z0-9-]{16,80}$/.test(customKey)) fail('Key tùy chọn cần 16–80 ký tự: chữ, số và dấu gạch ngang.');
+          const key = customKey || 'KZ-' + randomBytes(20).toString('hex').toUpperCase().match(/.{1,8}/g).join('-');
           const id = random();
-          (await db.prepare('INSERT INTO licenses VALUES(?,?,?,?,?,?,0,?)').run(id, hash(key), key.slice(0, 11), customer, expires, devices, now()));
+          const inserted = await db.prepare('INSERT INTO licenses VALUES(?,?,?,?,?,?,0,?) ON CONFLICT(key_hash) DO NOTHING').run(id, hash(key), key.slice(0, 11), customer, expires, devices, now());
+          if (!inserted.changes) fail('Key này đã tồn tại. Hãy chọn key khác.', 409);
           return send({ id, key }, 201);
         }
         const match = /^\/api\/admin\/keys\/([a-f0-9]{64})$/.exec(url.pathname);
