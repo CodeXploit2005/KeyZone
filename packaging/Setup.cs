@@ -83,7 +83,7 @@ class Setup : Form {
         string name = "KeyZone Video Studio";
         string key = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\KeyZoneVideoStudio";
         using (RegistryKey entry = Registry.CurrentUser.CreateSubKey(key)) {
-            entry.SetValue("DisplayName", name); entry.SetValue("DisplayVersion", "0.7.0"); entry.SetValue("Publisher", "KeyZone");
+            entry.SetValue("DisplayName", name); entry.SetValue("DisplayVersion", "0.7.1"); entry.SetValue("Publisher", "KeyZone");
             entry.SetValue("InstallLocation", target); entry.SetValue("DisplayIcon", Path.Combine(target, "KeyZone.exe"));
             entry.SetValue("UninstallString", "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \"" + Path.Combine(target, "Uninstall-KeyZone.ps1") + "\" -InstallRoot \"" + target + "\"");
             entry.SetValue("NoModify", 1); entry.SetValue("NoRepair", 1);

@@ -1,8 +1,11 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
 /* Light studio theme. Legacy gold names are UI accent aliases;
    output thumbnail colours remain independent in the media pipeline. */
 :root {
+  --font-body: "Be Vietnam Pro", Arial, sans-serif;
+  --font-geist-mono: "Geist Mono", monospace;
   --surface: #fff;
   --surface-soft: #f8f9fc;
   --accent-soft: #f0e7ff;

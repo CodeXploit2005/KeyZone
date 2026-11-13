@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Users } from "lucide-react";
@@ -17,20 +16,8 @@ import { LicenseGate } from "@/components/license-gate";
 import { LOCALES } from "@/i18n/config";
 import { LocaleProvider } from "@/i18n/client";
 import { getDictionary, getLocale } from "@/i18n/server";
-import "../globals.css";
+import "../style-entry.css";
 
-const body = Be_Vietnam_Pro({
-  preload: false,
-  variable: "--font-body",
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const mono = Geist_Mono({
-  preload: false,
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 // Apply the saved preference before paint, without waiting for client hydration.
 const themeBootstrap = `(function(){try{var t=localStorage.getItem('keyzone-theme');document.documentElement.dataset.theme=t==='light'||t==='dark'?t:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}})()`;
@@ -52,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const [locale, t] = await Promise.all([getLocale(), getDictionary()]);
   return (
-    <html lang={locale} suppressHydrationWarning className={`${body.variable} ${mono.variable} h-full antialiased`}>
+    <html lang={locale} suppressHydrationWarning className="h-full antialiased">
       <head><script dangerouslySetInnerHTML={{ __html: themeBootstrap }} /></head>
       <body className="min-h-full font-sans">
         <LicenseGate>

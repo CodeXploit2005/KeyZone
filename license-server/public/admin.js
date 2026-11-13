@@ -16,6 +16,15 @@ async function api(path, method = 'GET', data) {
   connection('Đã kết nối'); return result;
 }
 function message(value) { $('message').textContent = value; $('message').hidden = !value; }
+function ask(text) {
+  const dialog = $('confirmAction'); $('confirmText').textContent = text; dialog.returnValue = '';
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
+    $('cancelAction').onclick = () => dialog.close('cancel');
+    $('confirmActionButton').onclick = () => dialog.close('confirm');
+    dialog.showModal();
+  });
+}
 function state(key) { return key.revoked ? 'revoked' : key.expires_at <= Date.now() ? 'expired' : 'active'; }
 function view(name) {
   document.body.dataset.view = name;
@@ -69,7 +78,7 @@ function render() {
           editing = key.id; $('editCustomer').value = key.customer; $('editExpiry').value = formatDate(key.expires_at); $('editDevices').value = key.max_devices;
           $('editError').textContent = ''; $('editKey').showModal(); return;
         }
-        if (!confirm(action === 'delete' ? `Xóa key của ${key.customer}? Key và tất cả phiên kích hoạt sẽ bị xóa. Máy đang dùng key này sẽ bị khóa khi kiểm tra tiếp theo.` : action === 'revoke' ? `Thu hồi key của ${key.customer}? Ứng dụng sẽ khóa khi kiểm tra quyền tiếp theo.` : `Gỡ tất cả thiết bị của ${key.customer}? Các máy phải nhập key lại.`)) return;
+        if (!await ask(action === 'delete' ? `Xóa key của ${key.customer}? Key và tất cả phiên kích hoạt sẽ bị xóa. Máy đang dùng key này sẽ bị khóa khi kiểm tra tiếp theo.` : action === 'revoke' ? `Thu hồi key của ${key.customer}? Ứng dụng sẽ khóa khi kiểm tra quyền tiếp theo.` : `Gỡ tất cả thiết bị của ${key.customer}? Các máy phải nhập key lại.`)) return;
         button.disabled = true;
         try { await api('keys/' + key.id, action === 'delete' ? 'DELETE' : 'PATCH', action === 'delete' ? undefined : { action }); await load(); message(action === 'delete' ? 'Đã xóa key và các phiên kích hoạt.' : 'Đã cập nhật quyền sử dụng.'); } catch (e) { message(e.message); } finally { button.disabled = false; }
       };

@@ -1,5 +1,6 @@
 
 import { requireLicense } from "@/lib/license";
+import { connection } from "next/server";
 import { cookies } from "next/headers";
 import { env } from "@/lib/env";
 
@@ -20,6 +21,7 @@ async function upstream(path: string, method = "GET", body?: unknown, timeout = 
 }
 
 export async function GET() {
+  await connection();
   await requireLicense();
   try {
     const { response, data } = await upstream("/admin/accounts");

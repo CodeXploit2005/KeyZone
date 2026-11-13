@@ -20,7 +20,7 @@ import { DownloadCenter } from "@/components/DownloadCenter";
 const FAQ_ITEMS = [
   {
     q: "Key kích hoạt hoạt động như thế nào?",
-    a: "Bản Windows tích hợp bản quyền yêu cầu key còn hiệu lực và kết nối Internet. Quản trị viên cấp thời hạn, số thiết bị và có thể thu hồi key từ xa. Bộ cài 0.7.0 hiện có là bản cũ; bản có form key sẽ được phát hành sau khi máy chủ được thiết lập.",
+    a: "Bản Windows tích hợp bản quyền yêu cầu key còn hiệu lực và kết nối Internet. Quản trị viên cấp thời hạn, số thiết bị và có thể thu hồi key từ xa. Bộ cài Windows 0.7.1 đã có form nhập key và đồng bộ với máy chủ quản lý bản quyền.",
   },
   {
     q: "Tôi có cần tài khoản Muse không?",
@@ -111,7 +111,7 @@ export default function ReleasePage() {
               <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
               <span>STUDIO CỦA BẠN • TRÊN MÁY CỦA BẠN</span>
               <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 font-mono text-[10px] text-cyan-200">
-                v0.7.0
+                v0.7.1
               </span>
             </div>
 
@@ -376,7 +376,7 @@ export default function ReleasePage() {
 
         {/* DOWNLOAD COMMAND CENTER (Matches Reference Image 1) */}
         <section id="download" className="mx-auto max-w-5xl px-6 py-20">
-          <p className="mb-6 rounded-xl border border-amber-300/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Bộ cài 0.7.0 bên dưới chưa yêu cầu key. Bản Windows có kích hoạt key sẽ được cập nhật sau khi máy chủ bản quyền sẵn sàng. APK hiện tại chưa tích hợp key.</p>
+          <p className="mb-6 rounded-xl border border-amber-300/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Windows 0.7.1 đã có form kích hoạt key và đồng bộ thời hạn từ máy chủ. Nếu đang dùng bản 0.7.0, hãy tải và cài bản mới để cập nhật. APK hiện tại chưa tích hợp key.</p>
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-[#1e163b] px-3.5 py-1.5 text-xs font-semibold text-violet-200">
               <TrendingUp className="h-3.5 w-3.5 text-violet-300" />

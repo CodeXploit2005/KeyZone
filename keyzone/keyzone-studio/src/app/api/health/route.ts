@@ -1,8 +1,10 @@
 
 import { requireLicense } from "@/lib/license";
+import { connection } from "next/server";
 import { getProvider } from "@/lib/providers";
 
 export async function GET() {
+  await connection();
   await requireLicense();
   try {
     const muse = await getProvider().health();

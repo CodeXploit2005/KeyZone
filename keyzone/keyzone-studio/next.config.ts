@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
-    rules: {
+    rules: process.env.KEYZONE_PRECOMPILED_CSS === "1" ? {} : {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",

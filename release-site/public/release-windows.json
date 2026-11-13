@@ -1,193 +1,195 @@
 {
-  "filename": "KeyZone-Video-Studio-Setup-0.7.0.exe",
-  "version": "0.7.0",
-  "bytes": 305738184,
-  "sha256": "37ea7b2c6380424538712e8b851651821dd4d3919b775759bb2a7aa49886fac4",
+  "filename": "KeyZone-Video-Studio-Setup-0.7.1.exe",
+  "version": "0.7.1",
+  "bytes": 305697173,
+  "sha256": "4728cb643dea61a7998e467ad4eda497e58e88a38df2719a416530d54560cdf8",
+  "requiresLicense": true,
+  "licenseServer": "https://keyzone-6laz.onrender.com",
   "parts": [
     {
       "path": "downloads/windows/part-000.bin",
       "bytes": 8388608,
-      "sha256": "9bbc84623631ec466ec3137a3d20bbba534c12e82e7b1de6a01a20298bc163a2"
+      "sha256": "a75b7a740d0967e880114da69f75b84503e621151c90efb721a0d472d76696b2"
     },
     {
       "path": "downloads/windows/part-001.bin",
       "bytes": 8388608,
-      "sha256": "3a8407ec140d57fd4d5b3bbbc0730a32ffdd59578eb39e7a4b39dae9b7a2cf1c"
+      "sha256": "97e2cdcfbcbbddecf1459f0ba595a10e099bb087e821058085e3df386b34d94e"
     },
     {
       "path": "downloads/windows/part-002.bin",
       "bytes": 8388608,
-      "sha256": "73144956a343776129cea896962d1b7b732a7fef42c690142a6fb9b5fc248ac9"
+      "sha256": "1c4b99ed563ce12d4910acbedf97db237f72ee71dc02a90c4eedd8ea37f8faac"
     },
     {
       "path": "downloads/windows/part-003.bin",
       "bytes": 8388608,
-      "sha256": "54b2713d215a13ab02c761a0c6eb21fd1ab71822b676013589abf8082403d7cc"
+      "sha256": "1f94d245d4e947ad21fda6515cf3ff90f95f4c8088a89e2385db00f756c01f88"
     },
     {
       "path": "downloads/windows/part-004.bin",
       "bytes": 8388608,
-      "sha256": "f073b38af98f76b4b4ed161771b75d88163f27afdc975ecf1b1299be3061a7b6"
+      "sha256": "f63a4183fab0c6e74f0bda7257a12c7711ed6ee35a0b04e31d23643deaf78ea9"
     },
     {
       "path": "downloads/windows/part-005.bin",
       "bytes": 8388608,
-      "sha256": "69cebb32543f32cad67563aa77f2387a1fb5123f3729dcfb696a1f5e48400c14"
+      "sha256": "679c37ff617142f5c2792a43ecaef3f62685eae2d5ef3a29fd10f1cd737cb259"
     },
     {
       "path": "downloads/windows/part-006.bin",
       "bytes": 8388608,
-      "sha256": "eb7145b551120ec799422987c244cecb8879dbab395a9dd8feeaaaefda641a80"
+      "sha256": "c8d665c0c69bb89db20c073a4be5f1ca002ba47213f0836a2a55870961aad48c"
     },
     {
       "path": "downloads/windows/part-007.bin",
       "bytes": 8388608,
-      "sha256": "381a35a97b0c6aca58e103d766c1376987ed48d6623b1252f7ecf4ecda9892a2"
+      "sha256": "6fded5e3922647c3d4dc1038c20f042e8de9412c3fc04874b2112061fcc5b5e6"
     },
     {
       "path": "downloads/windows/part-008.bin",
       "bytes": 8388608,
-      "sha256": "4d1d755f63c5afcbb483aeb7b13688e359273d501877731f2bf78674f22e1b3c"
+      "sha256": "c8a06a30860f164fcf6873308fb3753f3c550cca4f4c4e085e5e20abcb249f9d"
     },
     {
       "path": "downloads/windows/part-009.bin",
       "bytes": 8388608,
-      "sha256": "77b52946c32d4153e237f2404cd745974570b93fdeefa0843579a2388d467749"
+      "sha256": "6df1266359206a20ef55aa5663eb8df591714a21da0912fee0751ae2e0a0f023"
     },
     {
       "path": "downloads/windows/part-010.bin",
       "bytes": 8388608,
-      "sha256": "8611ff55637b7469297dfdb1f7e39b1434b5cd86c2286d8c53c20c112d1ba4b5"
+      "sha256": "9a605c325da8733a2dfe84f9a0f25c069c4a66853791cc20c72168a3623a1452"
     },
     {
       "path": "downloads/windows/part-011.bin",
       "bytes": 8388608,
-      "sha256": "0e1cd0139b2711fcf47e1e36b7a0437d75c8023caa042df18e4ca56dbfef6173"
+      "sha256": "ebdbbf775a1d0b3380ffd8c4a60f7e3d37acf7ffa33c05c0a98168206b4d3b12"
     },
     {
       "path": "downloads/windows/part-012.bin",
       "bytes": 8388608,
-      "sha256": "7c6c6456a9dfc26e16c732e789f85809463bed770956461e5d6c07ad4cfc8eab"
+      "sha256": "2861eb3a2f9b8f95187091ed7c983414a563929ebfe0b8a11cd9a3ee808d2581"
     },
     {
       "path": "downloads/windows/part-013.bin",
       "bytes": 8388608,
-      "sha256": "5c6c417e2e173e53267e7e580e2e1655bdba139abae118a8d07df24e064cf345"
+      "sha256": "abec126ccf8ad3aa2ed20e6304d88e48f82ee6bf47b87ce12780db3edb581c7c"
     },
     {
       "path": "downloads/windows/part-014.bin",
       "bytes": 8388608,
-      "sha256": "7f1a7dcd9f3b2317c3499589d279927e30a228a0377c9db9c3295129e7276b67"
+      "sha256": "467bc2908fceca5ce92e12a896af50c67bc274bac716e2652109268793055031"
     },
     {
       "path": "downloads/windows/part-015.bin",
       "bytes": 8388608,
-      "sha256": "524060e701d5e006c8d460dadfdb59ecd039373695dd3219f99bc162c445c939"
+      "sha256": "9a576b2b264d6c89602801b8cb1ebfd2a562d06bcd34d37d8acf80bb87aad4dd"
     },
     {
       "path": "downloads/windows/part-016.bin",
       "bytes": 8388608,
-      "sha256": "159cc29c0642bd5a7c3163664ee79724526c3a5cb098393f78c650ccc8cd3415"
+      "sha256": "c5c8452ec9b29c2e77a8dc162b733462dbcae580f7bff0337594a0a12cb733f5"
     },
     {
       "path": "downloads/windows/part-017.bin",
       "bytes": 8388608,
-      "sha256": "7a945c673ed89a1cfa334eda831b79e6a2ce2aff6aeb625211e62fdcec54390b"
+      "sha256": "33c712e2424f32d54170443a67c54116b6f2f1c660933c9998f139475bf7d386"
     },
     {
       "path": "downloads/windows/part-018.bin",
       "bytes": 8388608,
-      "sha256": "9a71563637729679fbfea4c356c41d94a492fe3bca01fd50a54c81a4e1dbf9f0"
+      "sha256": "de6086b030e65ffcb54ba498d6d534d1704a228753ba03243bda144ab3e298d6"
     },
     {
       "path": "downloads/windows/part-019.bin",
       "bytes": 8388608,
-      "sha256": "4aee786fc52900c9806897308ddcf0d457b071a6e8eb4dcd5025eaf0e4f9a1b0"
+      "sha256": "32099f7dffbb3035f12252cfcd4747b082ed0512cf9b1095fec2cf98b9518ee1"
     },
     {
       "path": "downloads/windows/part-020.bin",
       "bytes": 8388608,
-      "sha256": "4cf5f19f6bcc251405a0dd2a12c924db0e27c49a9a738027f971f8add4f0e0b0"
+      "sha256": "5472c639d5084bdd493f1c57481b38620e17cd596890979e4eb0be6f901c6987"
     },
     {
       "path": "downloads/windows/part-021.bin",
       "bytes": 8388608,
-      "sha256": "44142028d6e4461d2022617abade056308666a8233ece2e3f38b0fab48caf746"
+      "sha256": "aff09924bf02f7a20996ed6530d53bcdc590365d58d7282137d9e21ef785623d"
     },
     {
       "path": "downloads/windows/part-022.bin",
       "bytes": 8388608,
-      "sha256": "144e178a96971673b86325f377d94b8d3477b82630485f8fdd5de68a2d59b4d8"
+      "sha256": "6af985e34abaf6e8df6d2da259be6b324e785b3195583000045faefed33c73a3"
     },
     {
       "path": "downloads/windows/part-023.bin",
       "bytes": 8388608,
-      "sha256": "ce23d90ef62a024dbfe5a5ca91ffcb47d22bc6bcb98a6062036ea1a48b00a2f5"
+      "sha256": "1edebcd76ac31c63b89a95d1993088e2716e23fa9e12732cdcbec22054cd749b"
     },
     {
       "path": "downloads/windows/part-024.bin",
       "bytes": 8388608,
-      "sha256": "d2a0bd814375ebfa830aebb9e99fb83ad270ef2c468570042a8e0590da53e84a"
+      "sha256": "9b7826b358e92848240362e2f4b66b3d589345512ea4d977de557ce3548ba17e"
     },
     {
       "path": "downloads/windows/part-025.bin",
       "bytes": 8388608,
-      "sha256": "08b359a8ebdc368cddd4136395892bf6c85057260cfbefedc40705c6e09d06a5"
+      "sha256": "0416938641ae60684ea59466212f0934118b9665740419181199b8db7875577b"
     },
     {
       "path": "downloads/windows/part-026.bin",
       "bytes": 8388608,
-      "sha256": "b619a5fd679606955fa94276aa6f41471682a6f2d78894aa5d41adce65a208be"
+      "sha256": "565fd93a1d2bebedec206fa784bebcaadd48a7831e58c9958d088989f95a86b7"
     },
     {
       "path": "downloads/windows/part-027.bin",
       "bytes": 8388608,
-      "sha256": "d097409f7de44d22f155d9d9ae718951ec61cbf25c5de4fcbf302274efe1bd92"
+      "sha256": "997206f3ce8fe1439e4c845639ba4c2d9527d61edde60d5ac763434306be998a"
     },
     {
       "path": "downloads/windows/part-028.bin",
       "bytes": 8388608,
-      "sha256": "a5d8aff90ba7ab6e5346d77b31d01c20202da6bafaebd42986c2e2a60077a032"
+      "sha256": "c096e021d5642b469472cce80d635861884b290e4df278d43ee7f26d550fdd4c"
     },
     {
       "path": "downloads/windows/part-029.bin",
       "bytes": 8388608,
-      "sha256": "7b4b51d0f3ec83d899da63143f6514e8514f9d2373d7a1c2dd5920e7e38840ce"
+      "sha256": "7067dfd5ac4b2cc7233238d571afa4c6207415bc3262e7aeaeec9bcc5880e4d1"
     },
     {
       "path": "downloads/windows/part-030.bin",
       "bytes": 8388608,
-      "sha256": "c284fd15ab01fc42f5fab5c4b033cbbac7ec73cafc647cf9592d5ec726dbee33"
+      "sha256": "2471507183f230c2afc673dd03cb66b2e91ae3dab503b21ae8791b71e7764037"
     },
     {
       "path": "downloads/windows/part-031.bin",
       "bytes": 8388608,
-      "sha256": "9619367dd43d70a473c2d81373913486af9b85b4710418efe6d29e762d1fc7b5"
+      "sha256": "95d11a1ae73bf320bfae8e8aea6442e5144fcdf7af32c0c1146b215d9b0f2c2c"
     },
     {
       "path": "downloads/windows/part-032.bin",
       "bytes": 8388608,
-      "sha256": "a24ad5764511c144274a01aed2477e4b39fddd61666660b349244d2afa8423f9"
+      "sha256": "c0c9bfa4b5faea168612098e3a140d7a82e3a3a1d35c2196af44f034a20adc0c"
     },
     {
       "path": "downloads/windows/part-033.bin",
       "bytes": 8388608,
-      "sha256": "24efe6677e486483e19d0b77da56c4952b379ef412e18b120292aea167e8ee90"
+      "sha256": "062b378e334c4809b69c42cae4a94c40cf86c3d4b7580aff4ac7afa4e90113c6"
     },
     {
       "path": "downloads/windows/part-034.bin",
       "bytes": 8388608,
-      "sha256": "09864ece5f206d8f8b2b20ee84d930e6cf45512af1ef2f531c26681fcb3785a4"
+      "sha256": "b3ef4b14080bc06656980e9c37adbbc6974d70c98175c2cb1707dffed7435c90"
     },
     {
       "path": "downloads/windows/part-035.bin",
       "bytes": 8388608,
-      "sha256": "2f3ee9ae3204a976453c59ca8687d9dd23af1873b518a11599954cac0e49a859"
+      "sha256": "485e60de1909b39e3b48cd6b884a7fa8a8ab118423c72c6f2aeefd256e6611df"
     },
     {
       "path": "downloads/windows/part-036.bin",
-      "bytes": 3748296,
-      "sha256": "bb2d51b0348637ff2dfaf7692863bf4b732da9c53d373462b2df6bfebf6095e8"
+      "bytes": 3707285,
+      "sha256": "d555fba215cddf5a8980c072b1c449eabec7b7707b8c55d3ee348d2689af537a"
     }
   ]
 }

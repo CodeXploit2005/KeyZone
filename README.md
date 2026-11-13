@@ -27,20 +27,20 @@ Theo [Render Free](https://render.com/docs/free), dịch vụ ngủ sau 15 phút
 
 Render chỉ chạy máy chủ cấp key và website. Video và tài khoản Muse tiếp tục chạy/lưu trên thiết bị khách.
 
-## Trạng thái bộ cài — cần đọc
+## Bộ cài Windows 0.7.1 có kích hoạt key
 
-Các tệp tải **0.7.0 hiện tại là bản cũ, chưa có khóa key**; website ghi rõ điều này. Mã nguồn Windows trong `keyzone/keyzone-studio` đã được thêm màn hình kích hoạt và kiểm tra quyền. **Chưa phát hành bộ cài mới**, vì cần URL Render thật sau lần triển khai đầu tiên. APK hiện tại cũng chưa được tích hợp key.
+Windows 0.7.1 đã có form nhập key trước khi vào studio và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. APK hiện tại chưa tích hợp key.
 
-Sau khi có URL Render, người phát hành cần build và thay bộ cài Windows kèm manifest tải xuống; khách đã cài bản cũ cần cập nhật. Không thể khóa từ xa những bản cũ chưa tích hợp cơ chế kiểm tra key.
+Key được xác minh qua API khi vào ứng dụng, khi gọi API/tác vụ mới và mỗi 20 giây trong giao diện. Key hết hạn, bị thu hồi hoặc bị xóa sẽ bị chặn; không có chế độ offline. Tác vụ đang chạy có thể hoàn tất.
 
-Quy trình trong workspace Windows gốc:
+Build trong workspace Windows có đủ runtime:
 
 ```powershell
-$env:KEYZONE_LICENSE_URL='https://URL-RENDER-THAT.onrender.com'
+$env:KEYZONE_LICENSE_URL='https://keyzone-6laz.onrender.com'
 python packaging/build-release.py
 ```
 
-Script build yêu cầu URL HTTPS và ghi `license-config.json` vào bộ cài. Repo này lưu mã nguồn phục vụ tham khảo và tiếp tục phát triển, không kèm runtime Node/Python/Postgres nặng hoặc dữ liệu cá nhân để build Windows độc lập. Script đóng gói vẫn cần workspace Windows có runtime tương ứng như bản trước.
+Build dùng font local và biên dịch Tailwind trước để không phụ thuộc Google Fonts lúc đóng gói. Script yêu cầu URL HTTPS, không kèm mật khẩu admin/token Turso trong bộ cài. Mã nguồn và giấy phép font được lưu trong repo; runtime Python/Postgres/FFmpeg không được đưa vào Git dưới dạng mã nguồn, nhưng có trong bộ cài được chia thành các phần tải đã xác minh SHA-256.
 
 ## Quản lý key
 
