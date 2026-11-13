@@ -23,7 +23,7 @@ export function AccountsPanel() {
   const active = target !== null || deleteTarget !== null || checking !== null;
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/muse-connect", { cache: "no-store" });
+      const response = await fetch("/api/muse-connect", { cache: "no-store", signal: AbortSignal.timeout(10_000) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setAccounts(data.accounts);
@@ -57,12 +57,15 @@ export function AccountsPanel() {
       const response = await fetch("/api/muse-connect", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "check", account_id: account.id }),
-        signal: AbortSignal.timeout(95_000),
+        signal: AbortSignal.timeout(30_000),
       });
-      if (!response.ok) throw new Error();
-      await load();
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || (vi ? "Chưa kiểm tra được workspace." : "Could not verify workspace."));
+      if (!result.ok) throw new Error(result.message || (vi ? "Workspace chưa sẵn sàng. Hãy thử lại hoặc kết nối lại tài khoản." : "Workspace is not ready. Retry or reconnect the account."));
+      setSuccess(vi ? "Workspace đã sẵn sàng." : "Workspace is ready.");
+      void load();
       window.dispatchEvent(new Event("muse-accounts-changed"));
-    } catch { setError(vi ? "Chưa kiểm tra được tài khoản. Vui lòng thử lại." : "Could not check this account. Please retry."); }
+    } catch (error) { setError(error instanceof Error && error.name !== "TimeoutError" ? error.message : (vi ? "Kiểm tra quá thời gian. Phiên đăng nhập vẫn được giữ; hãy thử lại." : "Check timed out. Your session is kept; please retry.")); }
     finally { setChecking(null); }
   }
   function start(account?: Account) {

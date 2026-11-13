@@ -18,7 +18,12 @@ async function api(path, method = 'GET', data) {
 }
 function message(value) { $('message').textContent = value; $('message').hidden = !value; }
 function ask(text) {
-  const dialog = $('confirmAction'); $('confirmText').textContent = text; dialog.returnValue = '';
+  const dialog = $('confirmAction');
+  if (!dialog || !$('confirmText') || !$('cancelAction') || !$('confirmActionButton')) {
+    message('Trang quản trị chưa tải đủ thành phần xác nhận. Hãy tải lại trang rồi thử lại.');
+    return Promise.resolve(false);
+  }
+  $('confirmText').textContent = text; dialog.returnValue = '';
   return new Promise(resolve => {
     dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
     $('cancelAction').onclick = () => dialog.close('cancel');

@@ -9,8 +9,9 @@ const nextConfig: NextConfig = {
   },
   // pg-boss and pg are server-only Node packages.
   serverExternalPackages: ["pg-boss", "pg"],
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Session-dependent layouts must render as one request, without shell resume.
+  cacheComponents: false,
+  partialPrefetching: false,
   turbopack: {
     rules: process.env.KEYZONE_PRECOMPILED_CSS === "1" ? {} : {
       "*.css": {

@@ -13,6 +13,7 @@ import {
   type SocialPosts,
   type ThumbnailSpec,
 } from "@/db/schema";
+import { withRetry } from "@/lib/retry";
 import { getProvider } from "@/lib/providers";
 import { gatewayChat, gatewayConfigured } from "@/lib/providers/gateway";
 import { MuseRefusedError } from "@/lib/providers/muse2api";
@@ -64,23 +65,6 @@ import { productImageSheet } from "@/lib/product-image-sheet";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
-}
-
-/** Muse fails intermittently; one immediate retry recovers most of those. */
-async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 2): Promise<T> {
-  let lastErr: unknown;
-  for (let i = 1; i <= attempts; i++) {
-    try {
-      return await fn();
-    } catch (err) {
-      // Muse refuses the same request again (it remembers it) and every refusal costs tokens;
-      // a region block will not lift either. Refusals are rewritten instead (see withRewrite).
-      if (err instanceof MuseRefusedError) throw err;
-      lastErr = err;
-      console.warn(`[${label}] attempt ${i}/${attempts} failed: ${message(err)}`);
-    }
-  }
-  throw lastErr;
 }
 
 /** Loads a project's cast, lead first, with every relational query that needs it. */

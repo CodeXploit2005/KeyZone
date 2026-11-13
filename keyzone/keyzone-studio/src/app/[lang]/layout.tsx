@@ -27,6 +27,8 @@ export function generateStaticParams() {
 }
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
+// The desktop app reads its local database and license per request, never at build time.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();

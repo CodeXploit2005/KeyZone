@@ -48,9 +48,13 @@ export async function POST(request: Request) {
       if (typeof body.account_id !== "string" || !/^[a-zA-Z0-9_-]{1,64}$/.test(body.account_id)) {
         return Response.json({ error: "Tài khoản không hợp lệ." }, { status: 400, headers: noStore });
       }
-      const { response, data } = await upstream(`/admin/accounts/${encodeURIComponent(body.account_id)}/test`, "POST", undefined, 90_000);
-      if (!response.ok) return Response.json({ error: "Chưa kiểm tra được tài khoản. Vui lòng thử lại." }, { status: response.status, headers: noStore });
-      return Response.json({ ok: data.ok === true }, { headers: noStore });
+      try {
+        const { response, data } = await upstream(`/admin/accounts/${encodeURIComponent(body.account_id)}/test`, "POST", undefined, 25_000);
+        if (!response.ok) return Response.json({ error: data.message || data.detail || "Chưa kiểm tra được tài khoản. Vui lòng thử lại." }, { status: response.status, headers: noStore });
+        return Response.json({ ok: data.ok === true, message: data.message }, { headers: noStore });
+      } catch {
+        return Response.json({ error: "Kiểm tra workspace quá thời gian. Hãy thử lại; phiên đăng nhập vẫn được giữ." }, { status: 504, headers: noStore });
+      }
     }
     if (body.action === "delete") {
       if (typeof body.account_id !== "string" || !/^[a-zA-Z0-9_-]{1,64}$/.test(body.account_id)) {

@@ -27,7 +27,7 @@ Theo [Render Free](https://render.com/docs/free), dịch vụ ngủ sau 15 phút
 
 Render chỉ chạy máy chủ cấp key và website. Video và tài khoản Muse tiếp tục chạy/lưu trên thiết bị khách.
 
-## Windows 0.7.5 và Android 0.7.5-beta.1
+## Windows 0.7.6 và Android 0.7.5-beta.1
 
 Windows 0.7.3 có form nhập key trước khi vào studio và sửa lỗi logo bị chặn bởi proxy và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. Android 0.7.3-beta.1 đã có form nhập key, đồng bộ thời hạn, gỡ kích hoạt và kiểm tra key trong tác vụ nền. Phiên kích hoạt được mã hóa bằng Android Keystore; cần kiểm tra thêm trên điện thoại thật.
 

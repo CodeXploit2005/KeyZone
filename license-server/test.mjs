@@ -192,7 +192,11 @@ test('download website, admin assets and installer parts are served from one ori
       const content = await response.text();
       assert.ok(content.length > 0);
       if (path === '/') assert.ok(content.includes('KeyZone'));
-      if (path === '/admin') { assert.ok(content.includes('id="login"')); assert.ok(response.headers.get('content-security-policy').includes("script-src 'self'")); }
+      if (path === '/admin') {
+        assert.ok(content.includes('id="login"'));
+        for (const id of ['confirmAction','confirmText','cancelAction','confirmActionButton']) assert.ok(content.includes(`id="${id}"`),`Missing action confirmation element: ${id}`);
+        assert.ok(response.headers.get('content-security-policy').includes("script-src 'self'"));
+      }
     }
     const download = await fetch(base + '/downloads/windows/part-000.bin', { method: 'HEAD' });
     assert.equal(download.status, 200);

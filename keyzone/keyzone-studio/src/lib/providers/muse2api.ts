@@ -13,7 +13,7 @@ const POLL_INTERVAL_MS = 5_000;
 const IMAGE_DEADLINE_MS = 8 * 60_000;
 const VIDEO_DEADLINE_MS = 20 * 60_000;
 // Stay under undici's default 300s headers timeout for non-streaming chat.
-const CHAT_TIMEOUT_S = 280;
+const CHAT_TIMEOUT_S = 120;
 
 interface TaskResponse {
   task_id?: string;
@@ -25,7 +25,9 @@ interface TaskResponse {
   video?: { url?: string };
 }
 
-export class MuseError extends Error {}
+export class MuseError extends Error {
+  constructor(message: string, readonly retryable = true) { super(message); }
+}
 
 /** Muse replied with text ("sorry, I couldn't make this") instead of media; retrying the same prompt rarely helps. */
 export class MuseRefusedError extends MuseError {
@@ -49,7 +51,8 @@ export class Muse2ApiProvider implements GenerationProvider {
   }
 
   private async request<T>(method: string, pathname: string, body?: unknown, timeoutMs = 60_000) {
-    const res = await fetch(`${this.base}${pathname}`, {
+    let res: Response;
+    try { res = await fetch(`${this.base}${pathname}`, {
       method,
       headers: {
         Authorization: `Bearer ${env().MUSE2API_KEY}`,
@@ -57,12 +60,26 @@ export class Muse2ApiProvider implements GenerationProvider {
       },
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(timeoutMs),
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      throw new MuseError(`muse2api ${method} ${pathname} → ${res.status}: ${text.slice(0, 500)}`);
+    }); } catch {
+      throw new MuseError("Muse chưa phản hồi đúng hạn hoặc mất kết nối. Vào Quản lý tài khoản để kiểm tra workspace rồi thử lại.", false);
     }
-    return JSON.parse(text) as T;
+    let text: string;
+    try { text = await res.text(); } catch {
+      throw new MuseError("Mất kết nối khi chờ Muse trả lời. Kiểm tra workspace rồi thử lại.", false);
+    }
+    if (!res.ok) {
+      let reason = "";
+      try { const body = JSON.parse(text); reason = body.error?.message || body.detail || body.message || ""; } catch { /* Non-JSON upstream error. */ }
+      const message = /busy|繁忙|空闲|đang bận/i.test(reason)
+        ? "Muse đang bận xử lý tác vụ khác. Hãy chờ tác vụ đó xong rồi thử lại."
+        : res.status === 401 ? "Phiên đăng nhập Muse không còn hợp lệ. Hãy kết nối lại tài khoản."
+        : res.status === 429 ? "Muse đang giới hạn lượt yêu cầu. Hãy chờ rồi thử lại."
+        : "Chưa kết nối được workspace Muse. Vào Quản lý tài khoản để kiểm tra hoặc kết nối lại rồi thử lại.";
+      throw new MuseError(message, false);
+    }
+    try { return JSON.parse(text) as T; } catch {
+      throw new MuseError("Muse trả về phản hồi không hợp lệ. Kiểm tra kết nối rồi thử lại.", false);
+    }
   }
 
   async chat(prompt: string) {

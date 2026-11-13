@@ -72,7 +72,9 @@ try {
     await execute('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'Stop-KeyZone.ps1'), '-InstallRoot', root, '-DataDir', data]);
   }
   config ||= { apiKey: crypto.randomBytes(32).toString('hex'), password: crypto.randomBytes(32).toString('hex'), instance: crypto.randomUUID() };
-  const [web, muse, cdp] = await Promise.all([freePort(config.web || Number(option('--web-port')) || 3210), freePort(config.muse || 18611), freePort(config.cdp || 19211)]);
+  const [web, muse] = await Promise.all([freePort(config.web || Number(option('--web-port')) || 3210), freePort(config.muse || 18611)]);
+  // MuseEngine reconnects to its existing browser. Do not move its debugging port on every restart.
+  const cdp = config.cdp || 19211;
   config.web = web; config.muse = muse; config.cdp = cdp;
   if (!config.db) config.db = await freePort(54329);
   fs.writeFileSync(configFile, JSON.stringify(config, null, 2), { mode: 0o600 });

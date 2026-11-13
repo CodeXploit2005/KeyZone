@@ -55,7 +55,7 @@ def build():
     copy_tree(STUDIO / '.next-release/static', STAGE / 'app/.next-release/static')
     copy_tree(STUDIO / 'public', STAGE / 'app/public')
     copy_tree(STUDIO / 'assets', STAGE / 'app/assets')
-    (STAGE / 'app/next.config.js').write_text("module.exports = {distDir:'.next-release',cacheComponents:true,partialPrefetching:true,serverExternalPackages:['pg-boss','pg'],experimental:{serverActions:{bodySizeLimit:'10mb'}}};\n", encoding='utf-8')
+    (STAGE / 'app/next.config.js').write_text("module.exports = {distDir:'.next-release',cacheComponents:false,partialPrefetching:false,serverExternalPackages:['pg-boss','pg'],experimental:{serverActions:{bodySizeLimit:'10mb'}}};\n", encoding='utf-8')
     run([NODE, ROOT / 'packaging/copy-dependencies.cjs', STUDIO, STAGE / 'app/node_modules'])
     # Turbopack emits hashed external package aliases alongside its build output.
     aliases = STUDIO / '.next-release/node_modules'
@@ -72,10 +72,13 @@ def build():
     sql = sorted(schema_dir.glob('*.sql'))
     assert sql, 'Schema generation did not produce SQL'
     (STAGE / 'schema.sql').write_text('\n'.join(p.read_text(encoding='utf-8') for p in sql), encoding='utf-8')
+    # Refresh bridge code even when reusing the bundled runtimes.
+    for name in ('app.py', 'engine.py', 'cdp.py'):
+        shutil.copy2(ROOT / 'muse2api-local' / name, STAGE / 'muse' / name)
     if '--app-only' in sys.argv:
         for binary in ('runtime/node/node.exe', 'runtime/python/python.exe', 'runtime/postgres/bin/pg_ctl.exe', 'runtime/ffmpeg/ffmpeg.exe'):
             if not (STAGE / binary).is_file(): raise RuntimeError('Missing reusable runtime: ' + binary)
-        (STAGE / 'release.json').write_text(json.dumps({'product': 'KeyZone Video Studio', 'version': '0.7.5', 'platform': 'windows-x64'}), encoding='utf-8')
+        (STAGE / 'release.json').write_text(json.dumps({'product': 'KeyZone Video Studio', 'version': '0.7.6', 'platform': 'windows-x64'}), encoding='utf-8')
         package()
         return
     runtime = STAGE / 'runtime'
@@ -111,14 +114,14 @@ def build():
         shutil.copy2(ROOT / 'muse2api-local' / name, muse / name)
     for name in ('launcher.mjs', 'Stop-KeyZone.ps1', 'Uninstall-KeyZone.ps1'):
         shutil.copy2(ROOT / 'packaging' / name, STAGE / name)
-    (STAGE / 'release.json').write_text(json.dumps({'product': 'KeyZone Video Studio', 'version': '0.7.5', 'platform': 'windows-x64'}), encoding='utf-8')
+    (STAGE / 'release.json').write_text(json.dumps({'product': 'KeyZone Video Studio', 'version': '0.7.6', 'platform': 'windows-x64'}), encoding='utf-8')
     (STAGE / 'HUONG-DAN.txt').write_text('KeyZone Video Studio\n\nMở KeyZone.exe, sau đó kết nối tài khoản Muse của bạn.\nDữ liệu được lưu riêng trong %LOCALAPPDATA%\\KeyZone Video Studio.\nCần Internet và Microsoft Edge hoặc Google Chrome để dùng Muse.\nKhông có tài khoản, API key hay video của nhà phát hành trong bộ cài.\n\nTùy chọn: cấu hình khóa ElevenLabs/AI Gateway của bạn trong providers.json tại thư mục dữ liệu.\nGỡ cài đặt giữ lại dự án và video để bạn có thể cài lại.\n', encoding='utf-8-sig')
     (STAGE / 'THIRD-PARTY-NOTICES.txt').write_text('KeyZone bundles Node.js, Python, PostgreSQL, FFmpeg and the JavaScript/Python packages included here. Their original licenses are preserved with each component.\nSource projects: https://nodejs.org/ https://python.org/ https://postgresql.org/ https://ffmpeg.org/ https://www.gyan.dev/ffmpeg/builds/ https://github.com/bynne2602/muse2api\nFFmpeg is a GPL build; its license and build information are supplied in runtime/ffmpeg.\nMicrosoft app-local runtime libraries are redistributed for use with this application.\n', encoding='utf-8')
     package()
 
 
 def package():
-    (STAGE / 'HUONG-DAN.txt').write_text('KeyZone Video Studio 0.7.5\n\nMo KeyZone.exe va nhap key do quan tri vien cap. Can Internet de xac minh key.\nMay chu key: https://keyzone-6laz.onrender.com\nKey het han, bi thu hoi hoac bi xoa se khong the su dung.\nDu lieu du an cu duoc giu trong thu muc du lieu rieng.\n', encoding='utf-8-sig')
+    (STAGE / 'HUONG-DAN.txt').write_text('KeyZone Video Studio 0.7.6\n\nMo KeyZone.exe va nhap key do quan tri vien cap. Can Internet de xac minh key.\nMay chu key: https://keyzone-6laz.onrender.com\nKey het han, bi thu hoi hoac bi xoa se khong the su dung.\nDu lieu du an cu duoc giu trong thu muc du lieu rieng.\n', encoding='utf-8-sig')
     shutil.copy2(ROOT / 'packaging/branding/keyzone.ico', STAGE / 'KeyZone.ico')
     for name in ('launcher.mjs', 'Stop-KeyZone.ps1', 'Uninstall-KeyZone.ps1'):
         shutil.copy2(ROOT / 'packaging' / name, STAGE / name)
@@ -137,17 +140,17 @@ def package():
             inventory.append({'path': rel, 'bytes': file.stat().st_size})
     print('Payload:', len(inventory), 'files;', sum(row['bytes'] for row in inventory), 'bytes', flush=True)
     (OUT / 'inventory.json').write_text(json.dumps(inventory, indent=2), encoding='utf-8')
-    archive = OUT / 'KeyZone-Video-Studio-0.7.5-Windows-x64.zip'
+    archive = OUT / 'KeyZone-Video-Studio-0.7.6-Windows-x64.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for file in STAGE.rglob('*'):
             if file.is_file(): z.write(file, file.relative_to(STAGE).as_posix())
     checksum = hashlib.sha256(archive.read_bytes()).digest()
-    setup = OUT / 'KeyZone-Video-Studio-Setup-0.7.5.exe'
+    setup = OUT / 'KeyZone-Video-Studio-Setup-0.7.6.exe'
     with setup.open('wb') as output:
         output.write(stub.read_bytes())
         with archive.open('rb') as stream: shutil.copyfileobj(stream, output)
         output.write(checksum); output.write(struct.pack('<Q', archive.stat().st_size)); output.write(b'KZPAY001')
-    release = {'filename': setup.name, 'version': '0.7.5', 'bytes': setup.stat().st_size, 'sha256': hashlib.sha256(setup.read_bytes()).hexdigest()}
+    release = {'filename': setup.name, 'version': '0.7.6', 'bytes': setup.stat().st_size, 'sha256': hashlib.sha256(setup.read_bytes()).hexdigest()}
     (OUT / 'release.json').write_text(json.dumps(release, indent=2), encoding='utf-8')
     print('RELEASE', json.dumps(release), flush=True)
 

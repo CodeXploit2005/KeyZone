@@ -1,3 +1,10 @@
+# Windows 0.7.6 and admin confirmations — 2026-11-14
+
+Fixed session-dependent React resume/hydration failures by disabling partial prerendering for the dynamic application shell. Workspace checks have bounded deadlines, report busy/disconnected states and always release the checking UI. Muse Chrome startup is serialized and reuses a stable debugging port/profile. Chat errors no longer trigger duplicate long retries.
+A real saved Muse session reached a ready workspace in 5.11 seconds; one short diagnostic prompt received its response in 9.84 seconds. Full video/script generation duration still depends on Muse.
+Restored the missing confirmation dialog used by revoke, reset-devices and delete. All three actions and cancellation passed browser tests against an isolated in-memory database; server suite 11/11 passed. Production accounts navigation/reload showed no React 418/resume errors; busy and timeout controls recovered.
+Windows installer: 305334538 bytes; SHA256 edceb95a3aab17c934b144b73a55d33d0e61dda20f469607a3e4f897e65a83c1. Includes updated Python bridge files. Android remains 0.7.5-beta.1. The removed portal announcement stays removed.
+
 # Windows 0.7.5 and Android 0.7.5-beta.1 — 2026-11-14
 
 Windows hides FFmpeg/ffprobe consoles with windowsHide while preserving stdout/stderr and failure reporting. Actual two-clip merge passed and output duration/audio were verified. The bundled worker includes the hidden-process option.

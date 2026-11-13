@@ -20,7 +20,7 @@ import { DownloadCenter } from "@/components/DownloadCenter";
 const FAQ_ITEMS = [
   {
     q: "Key kích hoạt hoạt động như thế nào?",
-    a: "Bản Windows và Android yêu cầu key còn hiệu lực và kết nối Internet. Quản trị viên cấp thời hạn, số thiết bị và có thể thu hồi key từ xa. Windows 0.7.5 và Android 0.7.5-beta.1 có form nhập key và đồng bộ thời hạn với máy chủ quản lý bản quyền.",
+    a: "Bản Windows và Android yêu cầu key còn hiệu lực và kết nối Internet. Quản trị viên cấp thời hạn, số thiết bị và có thể thu hồi key từ xa. Windows 0.7.6 và Android 0.7.5-beta.1 có form nhập key và đồng bộ thời hạn với máy chủ quản lý bản quyền.",
   },
   {
     q: "Tôi có cần tài khoản Muse không?",
@@ -111,7 +111,7 @@ export default function ReleasePage() {
               <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
               <span>STUDIO CỦA BẠN • TRÊN MÁY CỦA BẠN</span>
               <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 font-mono text-[10px] text-cyan-200">
-                v0.7.5
+                v0.7.6
               </span>
             </div>
 
