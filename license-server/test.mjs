@@ -5,12 +5,39 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
+import { tursoDatabase } from './database.mjs';
 
-test('admin authentication, activation, device limits, revocation and expiry', async () => {
+function tursoFixture() {
+  const sqlite = new DatabaseSync(':memory:');
+  const driver = tursoDatabase({ url: 'libsql://fixture.turso.io', token: 'fixture-token', transport: async (url, request) => {
+    assert.equal(url.href, 'https://fixture.turso.io/v2/pipeline');
+    assert.equal(request.headers.Authorization, 'Bearer fixture-token');
+    await Promise.resolve();
+    const results = JSON.parse(request.body).requests.map(operation => {
+      if (operation.type === 'close') return { type: 'ok', response: { type: 'close' } };
+      try {
+        const { sql, args = [] } = operation.stmt;
+        const values = args.map(a => a.type === 'integer' || a.type === 'float' ? Number(a.value) : a.type === 'null' ? null : a.value);
+        const statement = sqlite.prepare(sql);
+        const cols = statement.columns().map(c => ({ name: c.name }));
+        const rows = cols.length ? statement.all(...values) : [];
+        const changed = cols.length ? 0 : statement.run(...values).changes;
+        const encode = v => v === null ? { type: 'null' } : typeof v === 'number' ? { type: 'integer', value: String(v) } : { type: 'text', value: v };
+        return { type: 'ok', response: { type: 'execute', result: { cols, rows: rows.map(r => cols.map(c => encode(r[c.name]))), affected_row_count: changed } } };
+      } catch { return { type: 'error', error: { message: 'SQL fixture failure' } }; }
+    });
+    return Response.json({ results });
+  } });
+  return { driver, close: () => sqlite.close() };
+}
+
+for (const remote of [false, true]) test(`admin authentication, activation, device limits, revocation and expiry (${remote ? 'Turso protocol fixture' : 'local SQLite'})`, async () => {
   let time = Date.now();
   const origin = 'http://127.0.0.1:4320';
   const password = 'test-only-pass';
-  const server = createLicenseServer({ password, database: ':memory:', publicUrl: origin, now: () => time });
+  const fixture = remote ? tursoFixture() : undefined;
+  const server = createLicenseServer({ password, database: ':memory:', databaseAdapter: fixture?.driver, publicUrl: origin, now: () => time });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   let cookie = '';
@@ -52,7 +79,37 @@ test('admin authentication, activation, device limits, revocation and expiry', a
     assert.equal((await request('/v1/verify', 'POST', { token: again.body.token, device: other })).status, 401);
     await request('/api/admin/logout', 'POST', {});
     assert.equal((await request('/api/admin/keys')).status, 401);
-  } finally { await new Promise(resolve => server.close(resolve)); }
+  } finally { await new Promise(resolve => server.close(resolve)); fixture?.close(); }
+});
+
+test('remote database failures return 503 and schema setup retries on recovery', async () => {
+  const fixture = tursoFixture();
+  let down = true;
+  const driver = tursoDatabase({ url: 'https://fixture.turso.io', token: 'test-secret', transport: async () => { throw new Error('provider leaked secret'); } });
+  const adapter = { ...fixture.driver, exec: async sql => { if (down) return driver.exec(sql); return fixture.driver.exec(sql); } };
+  const server = createLicenseServer({ password: 'test-database-outage', databaseAdapter: adapter });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const request = () => fetch(base + '/v1/verify', { method: 'POST', body: JSON.stringify({ device: 'a'.repeat(64), token: 'b'.repeat(64) }) });
+    let result = await request(); assert.equal(result.status, 503); assert.ok(!(await result.text()).includes('test-secret'));
+    down = false; result = await request(); assert.equal(result.status, 401);
+  } finally { await new Promise(r => server.close(r)); fixture.close(); }
+});
+
+test('simultaneous remote activations respect the device limit', async () => {
+  const fixture = tursoFixture(), password = 'test-concurrent-key-password';
+  const server = createLicenseServer({ password, databaseAdapter: fixture.driver });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const login = await fetch(base + '/api/admin/login', { method: 'POST', headers: { Origin: 'http://127.0.0.1:4320' }, body: JSON.stringify({ password }) });
+    const created = await fetch(base + '/api/admin/keys', { method: 'POST', headers: { Origin: 'http://127.0.0.1:4320', Cookie: login.headers.get('set-cookie').split(';')[0] }, body: JSON.stringify({ customer: 'Concurrent test', maxDevices: 1, expiresAt: new Date(Date.now() + 86400000).toISOString() }) });
+    const { key } = await created.json();
+    const results = await Promise.all(Array.from({ length: 10 }, (_, i) => fetch(base + '/v1/activate', { method: 'POST', body: JSON.stringify({ key, device: String(i).repeat(64) }) })));
+    assert.equal(results.filter(r => r.status === 200).length, 1);
+    assert.equal(results.filter(r => r.status === 403).length, 9);
+  } finally { await new Promise(r => server.close(r)); fixture.close(); }
 });
 
 test('licenses and device sessions survive server restart', async () => {

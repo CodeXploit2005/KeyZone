@@ -1,25 +1,23 @@
-# A persistent disk requires a paid Render service. Review the plan in Render.
+# Render Free + external Turso Free database. No persistent disk required.
 services:
   - type: web
     name: keyzone-portal
     runtime: node
-    plan: starter
+    plan: free
     region: singapore
     buildCommand: npm run build
     startCommand: npm start
     healthCheckPath: /healthz
     autoDeployTrigger: commit
-    disk:
-      name: keyzone-licenses
-      mountPath: /var/data/keyzone
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 24.14.1
       - key: HOST
         value: 0.0.0.0
-      - key: KEYZONE_LICENSE_DB
-        value: /var/data/keyzone/licenses.sqlite
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
       - key: KEYZONE_SITE_DIR
         value: ./release-site/dist
       - key: KEYZONE_ADMIN_PASSWORD

@@ -1,16 +1,29 @@
 # KeyZone · Download portal & license admin
 
-Website tải Windows/Android, trang quản trị key và API xác minh dùng chung một dịch vụ Render.
+Website tải Windows/Android, trang quản trị key và API xác minh dùng chung một dịch vụ **Render Free**, lưu dữ liệu trên **Turso Free**. Không cần mua disk hoặc chọn gói trả phí. Các gói miễn phí có hạn mức của nhà cung cấp.
 
 [Triển khai trên Render](https://render.com/deploy?repo=https://github.com/CodeXploit2005/KeyZone)
 
 ## Triển khai
 
-1. Mở liên kết trên, kết nối GitHub và chọn repo này. Render đọc `render.yaml`.
-2. Đặt `KEYZONE_ADMIN_PASSWORD` riêng, ít nhất 12 ký tự. Không đưa mật khẩu vào GitHub.
-3. Kiểm tra gói **Starter và disk 1 GB có phí** trước khi tạo dịch vụ. Disk giữ cơ sở dữ liệu qua các lần deploy; không chuyển sang ổ tạm.
-4. Khi deploy thành công, mở URL Render cung cấp: `/` là trang tải, `/admin` là quản trị. Đăng nhập bằng mật khẩu đã đặt.
+1. Tạo tài khoản và database ở [Turso](https://turso.tech/), giữ gói Free. Lấy Database URL và Database Auth Token có quyền đọc/ghi của database đó (không dùng API token quản lý toàn tài khoản).
+2. Mở liên kết triển khai Render ở trên, kết nối GitHub và chọn repo này. Blueprint đã chọn `plan: free`, không tạo disk. Nếu tạo Web Service thủ công: Node, branch `main`, Singapore, Root Directory trống, Build Command `npm run build`, Start Command `npm start`, Compute Free, Health Check `/healthz`.
+3. Nhập ENV như mẫu dưới đây. Thay các placeholder trong giao diện Environment của Render; không commit mật khẩu/token thật vào GitHub.
+4. Khi deploy thành công, mở URL Render cung cấp: `/` là trang tải, `/admin` là quản trị. Database tự tạo bảng ở lần truy cập API đầu tiên.
 5. URL máy chủ tự lấy từ `RENDER_EXTERNAL_URL`. Nếu dùng tên miền riêng, đặt `KEYZONE_PUBLIC_URL=https://ten-mien-cua-ban` và truy cập admin qua đúng tên miền đó.
+
+```dotenv
+NODE_VERSION=24.14.1
+HOST=0.0.0.0
+KEYZONE_SITE_DIR=./release-site/dist
+KEYZONE_ADMIN_PASSWORD=your-private-password-at-least-12-characters
+TURSO_DATABASE_URL=libsql://your-database-your-org.turso.io
+TURSO_AUTH_TOKEN=your-database-read-write-token
+```
+
+URL `https://...turso.io` hoặc `turso://...turso.io` cũng được hỗ trợ. Xóa `KEYZONE_LICENSE_DB` cũ trên Render để tránh nhầm lẫn; khi có Turso, dữ liệu không lưu ở ổ cục bộ. Máy chủ từ chối khởi động trên Render nếu thiếu URL/token, tránh việc tạo key rồi mất khi restart. Key đang nằm trong SQLite cũ không tự chuyển lên Turso; bản triển khai mới bắt đầu với database Turso bạn chọn.
+
+Theo [Render Free](https://render.com/docs/free), dịch vụ ngủ sau 15 phút không có yêu cầu; lần mở tiếp theo có thể chờ khoảng một phút. Trong lúc chưa kết nối được API, ứng dụng vẫn khóa theo chính sách xác minh trực tuyến và tự thử lại. Dữ liệu key nằm ở Turso nên không mất khi Render ngủ/redeploy. Phiên đăng nhập admin cần đăng nhập lại sau khi Render restart. Turso Free có hạn mức: theo dõi Usage và giữ gói Free nếu không muốn phát sinh chi phí. Không dùng Render Postgres Free cho dữ liệu key lâu dài vì database đó hết hạn sau 30 ngày.
 
 Render chỉ chạy máy chủ cấp key và website. Video và tài khoản Muse tiếp tục chạy/lưu trên thiết bị khách.
 
@@ -51,4 +64,8 @@ npm start
 
 Mở `http://127.0.0.1:4320` và `/admin`. Chạy `npm test` để kiểm tra API, `npm run build` để xác minh toàn bộ tệp tải bằng SHA-256. Sửa web bằng `npm install` và `npm run build` trong `release-site`, rồi commit lại `dist`. Đầu ra web được lưu trong Git để Render chạy trực tiếp mà không cần cài Next.js.
 
-Kiến trúc: ứng dụng Windows → HTTPS `/v1/activate`, `/v1/verify` → SQLite trên disk Render ← `/admin`.
+Kiến trúc: ứng dụng Windows → HTTPS `/v1/activate`, `/v1/verify` → Render Free → Turso Free; quản trị viên điều khiển qua `/admin` trên cùng web Render.
+
+## Kiểm tra bản Free
+
+Bộ kiểm thử chạy API với SQLite thật tại máy và fixture mô phỏng giao thức Turso HTTP để kiểm tra tham số, kết quả số/ngày giờ, thu hồi/hết hạn, lỗi database và giới hạn thiết bị khi kích hoạt đồng thời. Chưa xác minh trên database Turso thật khi chưa có cấu hình tài khoản. Sau khi nhập ENV trên Render, hãy tạo một key, kích hoạt máy thử, thu hồi rồi restart dịch vụ để xác nhận dữ liệu trên tài khoản thật.
