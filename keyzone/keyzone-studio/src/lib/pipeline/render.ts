@@ -11,7 +11,8 @@ const FRAME: Record<AspectRatio, { w: number; h: number }> = {
 
 export function exec(cmd: string, args: string[]) {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-    const child = spawn(cmd, args);
+    // FFmpeg/ffprobe are background tools; hide their console on Windows.
+    const child = spawn(cmd, args, { windowsHide: true });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d));
