@@ -10,7 +10,7 @@ const random = () => randomBytes(32).toString('hex');
 const fail = (message, status = 400) => { throw Object.assign(new Error(message), { status }); };
 
 export function createLicenseServer({ database = './data/licenses.sqlite', password, publicUrl = 'http://127.0.0.1:4320', siteDirectory, now = Date.now } = {}) {
-  if (typeof password !== 'string' || password.length < 16) throw new Error('KEYZONE_ADMIN_PASSWORD cần ít nhất 16 ký tự.');
+  if (typeof password !== 'string' || password.length < 12) throw new Error('KEYZONE_ADMIN_PASSWORD cần ít nhất 12 ký tự.');
   const origin = new URL(publicUrl).origin;
   const secure = origin.startsWith('https:');
   if (database !== ':memory:') mkdirSync(dirname(database), { recursive: true });

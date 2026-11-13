@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 test('admin authentication, activation, device limits, revocation and expiry', async () => {
   let time = Date.now();
   const origin = 'http://127.0.0.1:4320';
-  const password = 'test-only-password-more-than-16';
+  const password = 'test-only-pass';
   const server = createLicenseServer({ password, database: ':memory:', publicUrl: origin, now: () => time });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;

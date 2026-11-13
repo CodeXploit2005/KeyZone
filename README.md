@@ -7,7 +7,7 @@ Website tải Windows/Android, trang quản trị key và API xác minh dùng ch
 ## Triển khai
 
 1. Mở liên kết trên, kết nối GitHub và chọn repo này. Render đọc `render.yaml`.
-2. Đặt `KEYZONE_ADMIN_PASSWORD` riêng, ít nhất 16 ký tự. Không đưa mật khẩu vào GitHub.
+2. Đặt `KEYZONE_ADMIN_PASSWORD` riêng, ít nhất 12 ký tự. Không đưa mật khẩu vào GitHub.
 3. Kiểm tra gói **Starter và disk 1 GB có phí** trước khi tạo dịch vụ. Disk giữ cơ sở dữ liệu qua các lần deploy; không chuyển sang ổ tạm.
 4. Khi deploy thành công, mở URL Render cung cấp: `/` là trang tải, `/admin` là quản trị. Đăng nhập bằng mật khẩu đã đặt.
 5. URL máy chủ tự lấy từ `RENDER_EXTERNAL_URL`. Nếu dùng tên miền riêng, đặt `KEYZONE_PUBLIC_URL=https://ten-mien-cua-ban` và truy cập admin qua đúng tên miền đó.
@@ -44,7 +44,7 @@ Script build yêu cầu URL HTTPS và ghi `license-config.json` vào bộ cài. 
 Node.js 24.14 trở lên, nhánh 24.x. Máy chủ không cần dependency ngoài.
 
 ```powershell
-$env:KEYZONE_ADMIN_PASSWORD='mat-khau-rieng-dai-it-nhat-16-ky-tu'
+$env:KEYZONE_ADMIN_PASSWORD='mat-khau-rieng-dai-it-nhat-12-ky-tu'
 $env:KEYZONE_SITE_DIR='./release-site/dist'
 npm start
 ```
