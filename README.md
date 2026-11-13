@@ -48,12 +48,12 @@ Giao diện quản trị có bố cục desktop và mobile. Trên điện thoạ
 
 Thời hạn có thể chọn nhanh, tự nhập số ngày/giờ hoặc gõ ngày cụ thể theo `DD/MM/YYYY HH:mm` (múi giờ thiết bị). Trong cửa sổ gia hạn, có thể gõ ngày mới hoặc cộng thêm 7/30/90 ngày. Ô Key tùy chọn cho phép tự đặt mã 16–80 ký tự (chữ, số, dấu gạch ngang); mã được chuẩn hóa thành chữ hoa và từ chối nếu trùng. Để trống thì hệ thống vẫn sinh key ngẫu nhiên.
 
-- Tạo key với khách hàng, ngày giờ hết hạn và giới hạn thiết bị. Key đầy đủ chỉ hiện một lần; hãy sao chép trước khi đóng.
+- Tạo key với khách hàng, ngày giờ hết hạn và giới hạn thiết bị. Key tạo từ bản mới có nút Sao chép để lấy lại toàn bộ mã. Key cũ chỉ lưu hash nên không thể khôi phục; cần tạo key thay thế.
 - Thu hồi: các lần xác minh sau bị từ chối. Form ứng dụng kiểm tra mỗi 20 giây, khi lấy lại focus và khóa khi hết hạn. API và mỗi tác vụ nền mới kiểm tra trực tuyến riêng. Tác vụ đã chạy có thể hoàn tất; chưa có cơ chế hủy giữa chừng.
 - Gia hạn/sửa cũng khôi phục key đã thu hồi. Gỡ thiết bị buộc các máy nhập lại key.
 - Mất mạng hoặc máy chủ không truy cập được: khóa quyền sử dụng, không có chế độ dùng offline.
 - Thiết bị dùng mã ngẫu nhiên lưu trong thư mục dữ liệu; cài lại/xóa dữ liệu sẽ tính là máy mới. Đây chưa phải fingerprint phần cứng chống giả mạo.
-- Key và token chỉ lưu dạng SHA-256 ở máy chủ; phiên quản trị dùng cookie HttpOnly, giới hạn thử mật khẩu và kiểm tra Origin. Chỉ sao lưu DB qua kênh riêng, không đưa vào Git.
+- Token và bản xác minh key lưu SHA-256; bản sao key mới được mã hóa AES-256-GCM để quản trị viên sao chép lại; phiên quản trị dùng cookie HttpOnly, giới hạn thử mật khẩu và kiểm tra Origin. Chỉ sao lưu DB qua kênh riêng, không đưa vào Git.
 - Mã chạy trên máy khách có thể bị sửa bởi người có toàn quyền máy. Cơ chế này kiểm soát các bản cài nguyên gốc; không cam kết chống crack tuyệt đối.
 
 ## Chạy thử
@@ -73,3 +73,5 @@ Kiến trúc: ứng dụng Windows → HTTPS `/v1/activate`, `/v1/verify` → Re
 ## Kiểm tra bản Free
 
 Bộ kiểm thử chạy API với SQLite thật tại máy và fixture mô phỏng giao thức Turso HTTP để kiểm tra tham số, kết quả số/ngày giờ, thu hồi/hết hạn, lỗi database và giới hạn thiết bị khi kích hoạt đồng thời. Chưa xác minh trên database Turso thật khi chưa có cấu hình tài khoản. Sau khi nhập ENV trên Render, hãy tạo một key, kích hoạt máy thử, thu hồi rồi restart dịch vụ để xác nhận dữ liệu trên tài khoản thật.
+
+Nút Xóa xóa key và mọi phiên kích hoạt trong cùng một thao tác database, không thể dùng lại key đã xóa. Mã hóa key sử dụng `KEYZONE_KEY_SECRET` nếu có, mặc định dùng mật khẩu admin hiện tại. Khi đổi mật khẩu admin, đặt `KEYZONE_KEY_SECRET` bằng giá trị đã dùng trước đó để tiếp tục giải mã key; giữ bí mật này riêng trên Render. Không thể khôi phục key cũ vốn chỉ lưu hash.

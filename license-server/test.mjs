@@ -69,7 +69,12 @@ for (const remote of [false, true]) test(`admin authentication, activation, devi
     const custom = await request('/api/admin/keys', 'POST', { ...fields, customKey: 'kz-customer-manual-2026' });
     assert.equal(custom.status, 201); assert.equal(custom.body.key, 'KZ-CUSTOMER-MANUAL-2026');
     assert.equal((await request('/api/admin/keys', 'POST', { ...fields, customKey: 'KZ-CUSTOMER-MANUAL-2026' })).status, 409);
-    assert.equal((await request('/v1/activate', 'POST', { key: custom.body.key, device: other })).body.valid, true);
+    const customSession = await request('/v1/activate', 'POST', { key: custom.body.key, device: other });
+    assert.equal(customSession.body.valid, true);
+    assert.equal((await request('/api/admin/keys/' + custom.body.id + '/copy', 'POST', {})).body.key, custom.body.key);
+    assert.equal((await request('/api/admin/keys/' + custom.body.id, 'DELETE')).status, 200);
+    assert.equal((await request('/v1/verify', 'POST', { token: customSession.body.token, device: other })).status, 401);
+    assert.equal((await request('/api/admin/keys/' + custom.body.id + '/copy', 'POST', {})).status, 404);
     assert.equal((await request('/api/admin/keys')).body.keys[0].key, undefined);
     assert.equal((await request('/v1/activate', 'POST', { key: 'WRONG', device })).status, 401);
     const activated = await request('/v1/activate', 'POST', { key, device });
@@ -95,6 +100,28 @@ for (const remote of [false, true]) test(`admin authentication, activation, devi
     await request('/api/admin/logout', 'POST', {});
     assert.equal((await request('/api/admin/keys')).status, 401);
   } finally { await new Promise(resolve => server.close(resolve)); fixture?.close(); }
+});
+
+test('existing hash-only keys are preserved during upgrade and deletion removes their sessions', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(`PRAGMA foreign_keys=ON; CREATE TABLE licenses(id TEXT PRIMARY KEY,key_hash TEXT UNIQUE NOT NULL,prefix TEXT NOT NULL,customer TEXT NOT NULL,expires_at INTEGER NOT NULL,max_devices INTEGER NOT NULL,revoked INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL);
+    CREATE TABLE devices(license_id TEXT NOT NULL REFERENCES licenses(id),device TEXT NOT NULL,token_hash TEXT UNIQUE NOT NULL,last_seen INTEGER NOT NULL,PRIMARY KEY(license_id,device));`);
+  const id = 'd'.repeat(64);
+  sqlite.prepare('INSERT INTO licenses VALUES(?,?,?,?,?,?,0,?)').run(id,'legacy-hash','KZ-OLD','Existing customer',Date.now()+86400000,1,Date.now());
+  sqlite.prepare('INSERT INTO devices VALUES(?,?,?,?)').run(id,'device','token',Date.now());
+  const password='migration-test-password';
+  const server = createLicenseServer({databaseAdapter:sqlite,password});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const base=`http://127.0.0.1:${server.address().port}`;
+  try {
+    const login=await fetch(base+'/api/admin/login',{method:'POST',headers:{Origin:'http://127.0.0.1:4320'},body:JSON.stringify({password})});
+    const headers={Origin:'http://127.0.0.1:4320',Cookie:login.headers.get('set-cookie').split(';')[0]};
+    const list=await fetch(base+'/api/admin/keys',{headers});
+    const row=(await list.json()).keys[0]; assert.equal(row.customer,'Existing customer');assert.equal(row.can_copy,0);
+    assert.equal((await fetch(base+'/api/admin/keys/'+id+'/copy',{method:'POST',headers,body:'{}'})).status,409);
+    assert.equal((await fetch(base+'/api/admin/keys/'+id,{method:'DELETE',headers})).status,200);
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM devices').get().n,0);
+  } finally {await new Promise(r=>server.close(r));}
 });
 
 test('remote database failures return 503 and schema setup retries on recovery', async () => {

@@ -50,18 +50,28 @@ function render() {
     dateCell.append(document.createTextNode(date)); const clock = document.createElement('small'); clock.textContent = time; dateCell.append(clock);
     cell('Thiết bị', 'device-count').textContent = `${key.device_count} / ${key.max_devices}`;
     const actions = cell(null, 'actions'), inner = document.createElement('div'); inner.className = 'actions-inner'; actions.append(inner);
-    for (const [label, action] of [['Gia hạn', 'edit'], ['Thu hồi', 'revoke'], ['Gỡ máy', 'reset']]) {
+    for (const [label, action] of [['Sao chép', 'copy'], ['Gia hạn', 'edit'], ['Thu hồi', 'revoke'], ['Gỡ máy', 'reset'], ['Xóa', 'delete']]) {
       const button = document.createElement('button'); button.textContent = label;
       button.setAttribute('aria-label', `${label} key của ${key.customer}`);
       if (action === 'revoke') { button.className = 'danger'; button.disabled = Boolean(key.revoked); }
       button.onclick = async () => {
+        if (action === 'copy') {
+          button.disabled = true;
+          try {
+            const result = await api('keys/' + key.id + '/copy', 'POST', {});
+            try { await navigator.clipboard.writeText(result.key); message('Đã sao chép toàn bộ key.'); }
+            catch { $('keyValue').textContent = result.key; $('copy').textContent = 'Sao chép key'; $('newKey').showModal(); }
+          } catch (e) { message(e.message); }
+          finally { button.disabled = false; }
+          return;
+        }
         if (action === 'edit') {
           editing = key.id; $('editCustomer').value = key.customer; $('editExpiry').value = formatDate(key.expires_at); $('editDevices').value = key.max_devices;
           $('editError').textContent = ''; $('editKey').showModal(); return;
         }
-        if (!confirm(action === 'revoke' ? `Thu hồi key của ${key.customer}? Ứng dụng sẽ khóa khi kiểm tra quyền tiếp theo.` : `Gỡ tất cả thiết bị của ${key.customer}? Các máy phải nhập key lại.`)) return;
+        if (!confirm(action === 'delete' ? `Xóa key của ${key.customer}? Key và tất cả phiên kích hoạt sẽ bị xóa. Máy đang dùng key này sẽ bị khóa khi kiểm tra tiếp theo.` : action === 'revoke' ? `Thu hồi key của ${key.customer}? Ứng dụng sẽ khóa khi kiểm tra quyền tiếp theo.` : `Gỡ tất cả thiết bị của ${key.customer}? Các máy phải nhập key lại.`)) return;
         button.disabled = true;
-        try { await api('keys/' + key.id, 'PATCH', { action }); await load(); message('Đã cập nhật quyền sử dụng.'); } catch (e) { message(e.message); } finally { button.disabled = false; }
+        try { await api('keys/' + key.id, action === 'delete' ? 'DELETE' : 'PATCH', action === 'delete' ? undefined : { action }); await load(); message(action === 'delete' ? 'Đã xóa key và các phiên kích hoạt.' : 'Đã cập nhật quyền sử dụng.'); } catch (e) { message(e.message); } finally { button.disabled = false; }
       };
       inner.append(button);
     }

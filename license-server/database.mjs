@@ -4,7 +4,7 @@ import { dirname } from 'node:path';
 
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS licenses(id TEXT PRIMARY KEY, key_hash TEXT UNIQUE NOT NULL, prefix TEXT NOT NULL,
-  customer TEXT NOT NULL, expires_at INTEGER NOT NULL, max_devices INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
+  customer TEXT NOT NULL, expires_at INTEGER NOT NULL, max_devices INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, key_ciphertext TEXT);
 CREATE TABLE IF NOT EXISTS devices(license_id TEXT NOT NULL REFERENCES licenses(id), device TEXT NOT NULL,
   token_hash TEXT UNIQUE NOT NULL, last_seen INTEGER NOT NULL, PRIMARY KEY(license_id,device));`;
 
