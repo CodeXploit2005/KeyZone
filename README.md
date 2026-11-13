@@ -27,9 +27,9 @@ Theo [Render Free](https://render.com/docs/free), dịch vụ ngủ sau 15 phút
 
 Render chỉ chạy máy chủ cấp key và website. Video và tài khoản Muse tiếp tục chạy/lưu trên thiết bị khách.
 
-## Bộ cài Windows 0.7.1 có kích hoạt key
+## Bộ cài Windows 0.7.2 có kích hoạt key
 
-Windows 0.7.1 đã có form nhập key trước khi vào studio và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. APK hiện tại chưa tích hợp key.
+Windows 0.7.2 đã có form nhập key trước khi vào studio và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. APK hiện tại chưa tích hợp key.
 
 Key được xác minh qua API khi vào ứng dụng, khi gọi API/tác vụ mới và mỗi 20 giây trong giao diện. Key hết hạn, bị thu hồi hoặc bị xóa sẽ bị chặn; không có chế độ offline. Tác vụ đang chạy có thể hoàn tất.
 
@@ -75,3 +75,5 @@ Kiến trúc: ứng dụng Windows → HTTPS `/v1/activate`, `/v1/verify` → Re
 Bộ kiểm thử chạy API với SQLite thật tại máy và fixture mô phỏng giao thức Turso HTTP để kiểm tra tham số, kết quả số/ngày giờ, thu hồi/hết hạn, lỗi database và giới hạn thiết bị khi kích hoạt đồng thời. Chưa xác minh trên database Turso thật khi chưa có cấu hình tài khoản. Sau khi nhập ENV trên Render, hãy tạo một key, kích hoạt máy thử, thu hồi rồi restart dịch vụ để xác nhận dữ liệu trên tài khoản thật.
 
 Nút Xóa xóa key và mọi phiên kích hoạt trong cùng một thao tác database, không thể dùng lại key đã xóa. Mã hóa key sử dụng `KEYZONE_KEY_SECRET` nếu có, mặc định dùng mật khẩu admin hiện tại. Khi đổi mật khẩu admin, đặt `KEYZONE_KEY_SECRET` bằng giá trị đã dùng trước đó để tiếp tục giải mã key; giữ bí mật này riêng trên Render. Không thể khôi phục key cũ vốn chỉ lưu hash.
+
+Bộ cài 0.7.2 sửa lỗi cập nhật khi phiên cũ còn giữ `libvips-42.dll`: chạy script dừng đã xác minh từ chính bộ cài, chờ tiến trình kết thúc, dừng cài đặt nếu preflight thất bại và thử lại khi có khóa tệp ngắn hạn. Chỉ dừng tiến trình có executable nằm trong đúng thư mục cài KeyZone. Không xóa dữ liệu dự án.

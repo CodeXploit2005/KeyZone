@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using System.Drawing;
 using Microsoft.Win32;
@@ -13,6 +14,7 @@ using Microsoft.Win32;
 class Setup : Form {
     static string target = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "KeyZone Video Studio");
     static bool silent, noLaunch, testOnly;
+    static string dataDir;
     Label title = new Label(); Label description = new Label(); ProgressBar progress = new ProgressBar(); Button install = new Button();
     Setup() {
         Text = "Cài đặt KeyZone Video Studio"; ClientSize = new Size(510, 285); StartPosition = FormStartPosition.CenterScreen;
@@ -28,12 +30,13 @@ class Setup : Form {
         if (silent) Shown += async (s, e) => { Hide(); await Install(); };
     }
     async Task Install() {
+        Environment.ExitCode = 0;
         install.Enabled = false;
         description.Text = "Đang cài đặt… Vui lòng giữ cửa sổ này mở.";
         try {
             await Task.Run(() => Extract());
             if (!testOnly) Register();
-            description.Text = "Đã cài đặt xong. Mở KeyZone trên màn hình Desktop\nvà kết nối tài khoản Muse của bạn để bắt đầu.";
+            description.Text = "Đã cài đặt xong. Mở KeyZone trên màn hình Desktop\nvà nhập key kích hoạt để bắt đầu.";
             progress.Value = 100; install.Text = "Mở KeyZone"; install.Enabled = true;
             if (silent || noLaunch) { Close(); return; }
             install.Click += (s, e) => { Process.Start(Path.Combine(target, "KeyZone.exe")); Close(); };
@@ -46,10 +49,6 @@ class Setup : Form {
     }
     void Extract() {
         Directory.CreateDirectory(target);
-        string oldStop = Path.Combine(target, "Stop-KeyZone.ps1");
-        if (File.Exists(oldStop)) {
-            using (Process stop = Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -File \"" + oldStop + "\" -InstallRoot \"" + target + "\"") { UseShellExecute = false, CreateNoWindow = true })) { stop.WaitForExit(30000); }
-        }
         string temporary = Path.Combine(Path.GetTempPath(), "keyzone-" + Guid.NewGuid().ToString("N") + ".zip");
         try {
             using (FileStream input = File.OpenRead(Application.ExecutablePath)) {
@@ -67,23 +66,50 @@ class Setup : Form {
             }
             string prefix = Path.GetFullPath(target).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
             using (ZipArchive archive = ZipFile.OpenRead(temporary)) {
+                StopExisting(archive);
                 int count = 0;
                 foreach (ZipArchiveEntry entry in archive.Entries) {
                     string file = Path.GetFullPath(Path.Combine(target, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
                     if (!file.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) throw new Exception("Đường dẫn trong bộ cài không hợp lệ.");
                     if (entry.FullName.EndsWith("/")) { Directory.CreateDirectory(file); continue; }
-                    Directory.CreateDirectory(Path.GetDirectoryName(file)); entry.ExtractToFile(file, true);
+                    Directory.CreateDirectory(Path.GetDirectoryName(file));
+                    for (int attempt = 0; ; attempt++) {
+                        try { entry.ExtractToFile(file, true); break; }
+                        catch (IOException error) {
+                            int code = error.HResult & 0xffff;
+                            if ((code != 32 && code != 33) || attempt >= 9) throw;
+                            Thread.Sleep(400);
+                        }
+                    }
                     int percentage = ++count * 100 / archive.Entries.Count;
                     if (!silent) BeginInvoke(new Action(() => progress.Value = Math.Min(100, percentage)));
                 }
             }
         } finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
+    void StopExisting(ZipArchive archive) {
+        if (!File.Exists(Path.Combine(target, "runtime", "node", "node.exe"))) return;
+        ZipArchiveEntry script = archive.GetEntry("Stop-KeyZone.ps1");
+        if (script == null) throw new IOException("Bộ cài thiếu thành phần dừng phiên cũ.");
+        string stopPath = Path.Combine(Path.GetTempPath(), "keyzone-stop-" + Guid.NewGuid().ToString("N") + ".ps1");
+        try {
+            script.ExtractToFile(stopPath, true);
+            string arguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + stopPath + "\" -InstallRoot \"" + target.TrimEnd(Path.DirectorySeparatorChar) + "\"";
+            if (!String.IsNullOrEmpty(dataDir)) arguments += " -DataDir \"" + dataDir.TrimEnd(Path.DirectorySeparatorChar) + "\"";
+            string shell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+            using (Process stop = Process.Start(new ProcessStartInfo(shell, arguments) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
+                Task<string> output = stop.StandardOutput.ReadToEndAsync();
+                Task<string> errors = stop.StandardError.ReadToEndAsync();
+                if (!stop.WaitForExit(60000)) { try { stop.Kill(); } catch {} throw new IOException("KeyZone cũ chưa dừng xong. Đóng ứng dụng rồi thử lại."); }
+                if (stop.ExitCode != 0) throw new IOException("Không dừng được KeyZone cũ. Đóng ứng dụng rồi thử lại.\n" + errors.Result);
+            }
+        } finally { if (File.Exists(stopPath)) File.Delete(stopPath); }
+    }
     void Register() {
         string name = "KeyZone Video Studio";
         string key = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\KeyZoneVideoStudio";
         using (RegistryKey entry = Registry.CurrentUser.CreateSubKey(key)) {
-            entry.SetValue("DisplayName", name); entry.SetValue("DisplayVersion", "0.7.1"); entry.SetValue("Publisher", "KeyZone");
+            entry.SetValue("DisplayName", name); entry.SetValue("DisplayVersion", "0.7.2"); entry.SetValue("Publisher", "KeyZone");
             entry.SetValue("InstallLocation", target); entry.SetValue("DisplayIcon", Path.Combine(target, "KeyZone.exe"));
             entry.SetValue("UninstallString", "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \"" + Path.Combine(target, "Uninstall-KeyZone.ps1") + "\" -InstallRoot \"" + target + "\"");
             entry.SetValue("NoModify", 1); entry.SetValue("NoRepair", 1);
@@ -100,6 +126,7 @@ class Setup : Form {
         noLaunch = args.Any(a => a.Equals("/NOLAUNCH", StringComparison.OrdinalIgnoreCase));
         testOnly = args.Any(a => a.Equals("/TEST", StringComparison.OrdinalIgnoreCase));
         foreach (string arg in args) if (arg.StartsWith("/DIR=", StringComparison.OrdinalIgnoreCase)) target = Path.GetFullPath(arg.Substring(5));
+        foreach (string arg in args) if (arg.StartsWith("/DATADIR=", StringComparison.OrdinalIgnoreCase)) dataDir = Path.GetFullPath(arg.Substring(9));
         Application.EnableVisualStyles(); Application.Run(new Setup());
     }
 }
