@@ -1,17 +1,345 @@
 <!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101018"><title>KeyZone · Quản lý bản quyền</title><link rel="stylesheet" href="/admin.css"><script type="module" src="/admin.js"></script></head>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070616">
+  <title>KeyZone · Quản lý bản quyền</title>
+  <link rel="stylesheet" href="/admin.css">
+  <script type="module" src="/admin.js"></script>
+</head>
 <body data-auth="false" data-view="list">
-<aside class="sidebar"><a class="brand" href="/admin"><span class="brand-mark">K</span><span>KeyZone<small>ADMIN CONSOLE</small></span></a><div class="workspace-label">KHÔNG GIAN QUẢN TRỊ</div><nav aria-label="Điều hướng chính"><button class="nav-link selected" data-view-button="list"><span>▦</span> Quản lý key <b id="navCount">0</b></button><button class="nav-link" data-view-button="create"><span>＋</span> Tạo key mới</button><a class="nav-link" href="/"><span>↓</span> Trang tải ứng dụng ↗</a></nav><div class="sidebar-bottom"><div class="service-note"><i class="status-dot"></i><div>Đồng bộ trực tuyến<small>Kiểm soát quyền từ một nơi</small></div></div><div class="admin-profile"><span class="avatar">A</span><div>Quản trị viên<small>KeyZone Video Studio</small></div><button id="logout" class="icon-button" aria-label="Đăng xuất" title="Đăng xuất" hidden>↪</button></div></div></aside>
-<div class="app-shell"><header class="topbar"><div class="breadcrumb">Không gian làm việc <span>/</span> <strong>Quản lý bản quyền</strong></div><a href="/" class="top-link">Trang tải xuống ↗</a><span class="connection" id="connection"><i class="status-dot"></i> Đang kết nối</span></header><main>
-<section class="intro"><div><p class="eyebrow">KEYZONE LICENSE MANAGER</p><h1>Quản lý key<span class="title-dot">.</span></h1><p>Cấp quyền sử dụng. Quản lý thời hạn. Kết nối mọi thiết bị.</p></div><button class="primary hero-create" data-view-button="create">＋ Tạo key mới</button></section>
-<p id="message" class="notice" role="status" aria-live="polite" hidden></p>
-<form id="login" class="panel login"><div class="login-emblem">K</div><p class="eyebrow">CHÀO MỪNG TRỞ LẠI</p><h2>Không gian của bạn</h2><p>Đăng nhập để quản lý key và quyền sử dụng KeyZone.</p><label>Mật khẩu quản trị<input id="password" type="password" autocomplete="current-password" required minlength="12" placeholder="Nhập mật khẩu của bạn"></label><button type="submit" class="primary submit-button">Đăng nhập →</button><span class="login-foot">Dành riêng cho quản trị viên KeyZone</span></form>
-<section id="workspace" hidden><div class="stats"><article><div><span>Tổng số key</span><b id="total">0</b><small>Toàn bộ giấy phép đã cấp</small></div><span class="stat-icon violet">⌘</span></article><article><div><span>Đang hoạt động</span><b id="active">0</b><small><i class="status-dot"></i> Sẵn sàng sử dụng</small></div><span class="stat-icon green">✓</span></article><article><div><span>Hết hạn</span><b id="expired">0</b><small>Cần gia hạn để tiếp tục</small></div><span class="stat-icon amber">◷</span></article><article><div><span>Thiết bị đã kết nối</span><b id="devices">0</b><small>Trên các key đã kích hoạt</small></div><span class="stat-icon blue">▣</span></article></div>
-<div class="columns"><form id="create" class="panel create-panel"><div class="panel-heading"><span class="panel-icon">＋</span><div><h2>Tạo key mới</h2><p>Cấp quyền cho khách hàng của bạn</p></div><span class="step-label">01</span></div><div class="form-content"><label>Khách hàng <span class="required">*</span><input id="customer" required maxlength="120" placeholder="Ví dụ: Nguyễn Minh Anh" autocomplete="off"></label><label>Key tùy chọn <span class="optional">Không bắt buộc</span><input id="customKey" maxlength="80" minlength="16" pattern="[A-Za-z0-9-]{16,80}" placeholder="Để trống để tạo tự động" autocomplete="off" spellcheck="false"><small>Hoặc tự nhập 16–80 ký tự: chữ, số và dấu gạch ngang.</small></label>
-<fieldset><legend>Thời hạn sử dụng</legend><div class="duration-presets" aria-label="Chọn nhanh thời hạn"><button type="button" data-days="7">7 ngày</button><button type="button" class="selected" data-days="30" aria-pressed="true">30 ngày</button><button type="button" data-days="90">90 ngày</button><button type="button" data-days="365">1 năm</button></div><div class="duration-inputs"><label>Tự nhập thời hạn<input id="durationAmount" type="number" min="1" max="87600" step="1" value="30" required inputmode="numeric"></label><label>Đơn vị<select id="durationUnit"><option value="days">Ngày</option><option value="hours">Giờ</option></select></label></div><div class="expiry-summary"><span>Hết hạn dự kiến</span><strong id="expirySummary">—</strong></div><details id="dateOptions"><summary>Chọn ngày giờ cụ thể <span>＋</span></summary><label>Ngày và giờ hết hạn<input id="expiry" type="text" placeholder="DD/MM/YYYY HH:mm" autocomplete="off" aria-describedby="dateHint"><small id="dateHint">Tự gõ, ví dụ: 25/12/2026 18:30 · giờ trên thiết bị của bạn.</small></label></details></fieldset>
-<label>Giới hạn thiết bị<div class="device-input"><input id="maxDevices" type="number" min="1" max="100" value="1" required inputmode="numeric"><span>thiết bị / key</span></div></label><button type="submit" class="primary submit-button">＋ Tạo key kích hoạt</button><p class="form-note">◇ Có thể sao chép lại key trong danh sách sau khi tạo.</p></div></form>
-<section class="panel list-panel"><div class="list-heading"><div><h2>Danh sách key <span id="listCount" class="count-badge">0</span></h2><p>Theo dõi và điều chỉnh quyền sử dụng</p></div><button id="refresh" class="secondary">↻ Làm mới</button></div><div class="list-toolbar"><div class="filters" role="group" aria-label="Lọc trạng thái"><button class="selected" data-filter="all" aria-pressed="true">Tất cả</button><button data-filter="active">Hoạt động</button><button data-filter="expired">Hết hạn</button><button data-filter="revoked">Đã thu hồi</button></div><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Tìm khách hàng, key…" aria-label="Tìm khách hàng hoặc mã key"></label></div><div class="table-wrap"><table><thead><tr><th>Khách hàng / Key</th><th>Trạng thái</th><th>Hết hạn</th><th>Thiết bị</th><th>Thao tác</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty-state" hidden><div class="empty-icon">⌘</div><h3 id="emptyTitle">Chưa có key nào</h3><p id="emptyText">Tạo key đầu tiên để bắt đầu quản lý quyền sử dụng.</p><button class="secondary" data-view-button="create">＋ Tạo key đầu tiên</button></div><div class="list-footer"><span id="resultCount">0 key</span><span><i class="status-dot"></i> Tự cập nhật mỗi 30 giây</span></div></section></div></section>
-<dialog id="newKey"><div class="dialog-success">✓</div><p class="eyebrow">SẴN SÀNG KÍCH HOẠT</p><h2>Key của bạn</h2><p>Sao chép và gửi riêng cho khách hàng. Bạn có thể sao chép lại key từ danh sách quản lý.</p><code id="keyValue"></code><div class="dialog-actions"><button id="copy" class="primary">Sao chép key</button><button id="closeKey" class="secondary">Đã lưu, đóng</button></div></dialog>
-<dialog id="confirmAction"><p class="eyebrow">XÁC NHẬN THAO TÁC</p><h2>Tiếp tục thay đổi?</h2><p id="confirmText"></p><div class="dialog-actions"><button id="cancelAction" class="secondary">Hủy</button><button id="confirmActionButton" class="primary">Xác nhận</button></div></dialog>
-<dialog id="editKey"><form id="edit"><p class="eyebrow">QUẢN LÝ QUYỀN SỬ DỤNG</p><h2>Điều chỉnh key</h2><p>Gia hạn cũng khôi phục key đã thu hồi.</p><label>Khách hàng<input id="editCustomer" required maxlength="120"></label><label>Hết hạn lúc<input id="editExpiry" type="text" required placeholder="DD/MM/YYYY HH:mm"><small>Tự nhập theo định dạng ngày/tháng/năm giờ:phút.</small></label><div class="duration-presets edit-presets"><button type="button" data-extend="7">＋7 ngày</button><button type="button" data-extend="30">＋30 ngày</button><button type="button" data-extend="90">＋90 ngày</button></div><label>Giới hạn thiết bị<input id="editDevices" type="number" min="1" max="100" required inputmode="numeric"></label><p id="editError" class="error-text" role="alert"></p><div class="dialog-actions"><button type="submit" class="primary">Lưu thay đổi</button><button id="cancelEdit" class="secondary" type="button">Hủy</button></div></form></dialog>
-</main><footer><span>© KeyZone Video Studio</span><span>Thời gian theo múi giờ trên thiết bị</span></footer></div><nav class="mobile-nav" aria-label="Điều hướng điện thoại"><button class="selected" data-view-button="list"><span>▦</span>Danh sách key</button><button data-view-button="create"><span>＋</span>Tạo key mới</button><a href="/"><span>↓</span>Tải ứng dụng</a></nav></body></html>
+  <!-- Ambient Neon Silk Wave Background -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="ambient-glow ambient-glow-left"></div>
+    <div class="ambient-glow ambient-glow-right"></div>
+    <div class="ambient-glow ambient-glow-bottom"></div>
+    <svg class="ambient-waves" viewBox="0 0 1600 900" fill="none" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="kzWavePurple" x1="0" y1="220" x2="720" y2="620" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#d946ef" stop-opacity="0.95" />
+          <stop offset="45%" stop-color="#8b5cf6" stop-opacity="0.45" />
+          <stop offset="100%" stop-color="#070616" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="kzWavePurpleFill" x1="180" y1="200" x2="360" y2="750" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#7e22ce" stop-opacity="0.28" />
+          <stop offset="100%" stop-color="#070616" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="kzWaveCyanTop" x1="1600" y1="140" x2="780" y2="560" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9" />
+          <stop offset="50%" stop-color="#6366f1" stop-opacity="0.38" />
+          <stop offset="100%" stop-color="#070616" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="kzWaveCyanBottom" x1="1600" y1="520" x2="760" y2="880" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.95" />
+          <stop offset="55%" stop-color="#3b82f6" stop-opacity="0.4" />
+          <stop offset="100%" stop-color="#070616" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="kzWaveCyanFill" x1="1300" y1="180" x2="1100" y2="880" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25" />
+          <stop offset="60%" stop-color="#1d4ed8" stop-opacity="0.16" />
+          <stop offset="100%" stop-color="#070616" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="M-60 230 C 140 370, 350 470, 620 490 L -60 760 Z" fill="url(#kzWavePurpleFill)" />
+      <path d="M-60 230 C 140 370, 350 470, 620 490" stroke="url(#kzWavePurple)" stroke-width="3" />
+      <path d="M1660 150 C 1340 190, 1140 380, 860 490 L 1660 880 Z" fill="url(#kzWaveCyanFill)" />
+      <path d="M1660 150 C 1340 190, 1140 380, 860 490" stroke="url(#kzWaveCyanTop)" stroke-width="2.5" />
+      <path d="M1660 520 C 1390 610, 1160 800, 820 860" stroke="url(#kzWaveCyanBottom)" stroke-width="3" />
+    </svg>
+  </div>
+
+  <aside class="sidebar">
+    <a class="brand" href="/admin">
+      <span class="brand-mark">K</span>
+      <span>KeyZone<small>ADMIN CONSOLE</small></span>
+    </a>
+    <div class="workspace-label">KHÔNG GIAN QUẢN TRỊ</div>
+    <nav aria-label="Điều hướng chính">
+      <button class="nav-link selected" data-view-button="list">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></svg>
+        </span>
+        Quản lý key <b id="navCount">0</b>
+      </button>
+      <button class="nav-link" data-view-button="create">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+        </span>
+        Tạo key mới
+      </button>
+      <a class="nav-link" href="/">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+        </span>
+        Trang tải ứng dụng ↗
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="service-note">
+        <i class="status-dot"></i>
+        <div>Đồng bộ trực tuyến<small>Kiểm soát quyền từ một nơi</small></div>
+      </div>
+      <div class="admin-profile">
+        <span class="avatar">A</span>
+        <div>Quản trị viên<small>KeyZone Video Studio</small></div>
+        <button id="logout" class="icon-button" aria-label="Đăng xuất" title="Đăng xuất" hidden>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="breadcrumb">Không gian làm việc <span>/</span> <strong>Quản lý bản quyền</strong></div>
+      <a href="/" class="top-link">Trang tải xuống ↗</a>
+      <span class="connection" id="connection"><i class="status-dot"></i> Đang kết nối</span>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow"><span class="eyebrow-dot"></span>KEYZONE LICENSE MANAGER</p>
+          <h1>Quản lý bản quyền <span class="title-gradient">&amp; thiết bị.</span></h1>
+          <p>Cấp mã kích hoạt tức thì, kiểm soát thời hạn linh hoạt và theo dõi thiết bị kết nối theo thời gian thực.</p>
+        </div>
+        <button class="primary hero-create" data-view-button="create">＋ Tạo key mới</button>
+      </section>
+
+      <p id="message" class="notice" role="status" aria-live="polite" hidden></p>
+
+      <form id="login" class="panel login">
+        <div class="login-emblem">K</div>
+        <p class="eyebrow">CHÀO MỪNG TRỞ LẠI</p>
+        <h2>Không gian quản trị</h2>
+        <p>Đăng nhập để cấp phát key và quản lý quyền sử dụng KeyZone Video Studio.</p>
+        <label>Mật khẩu quản trị
+          <input id="password" type="password" autocomplete="current-password" required minlength="12" placeholder="Nhập mật khẩu quản trị viên">
+        </label>
+        <button type="submit" class="primary submit-button">Đăng nhập hệ thống →</button>
+        <span class="login-foot">Bảo mật hai lớp · Dành riêng cho quản trị viên KeyZone</span>
+      </form>
+
+      <section id="workspace" hidden>
+        <div class="stats">
+          <article class="stat-card stat-violet">
+            <div>
+              <span>Tổng số key</span>
+              <b id="total">0</b>
+              <small>Toàn bộ giấy phép đã cấp</small>
+            </div>
+            <span class="stat-icon violet" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
+            </span>
+          </article>
+          <article class="stat-card stat-green">
+            <div>
+              <span>Đang hoạt động</span>
+              <b id="active">0</b>
+              <small><i class="status-dot"></i> Sẵn sàng sử dụng</small>
+            </div>
+            <span class="stat-icon green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+          </article>
+          <article class="stat-card stat-amber">
+            <div>
+              <span>Hết hạn</span>
+              <b id="expired">0</b>
+              <small>Cần gia hạn để tiếp tục</small>
+            </div>
+            <span class="stat-icon amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+          </article>
+          <article class="stat-card stat-blue">
+            <div>
+              <span>Thiết bị đã kết nối</span>
+              <b id="devices">0</b>
+              <small>Trên các key đã kích hoạt</small>
+            </div>
+            <span class="stat-icon blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            </span>
+          </article>
+        </div>
+
+        <div class="columns">
+          <form id="create" class="panel create-panel">
+            <div class="panel-heading">
+              <span class="panel-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              </span>
+              <div>
+                <h2>Tạo key mới</h2>
+                <p>Cấp quyền cho khách hàng của bạn</p>
+              </div>
+              <span class="step-label">01</span>
+            </div>
+
+            <div class="form-content">
+              <label>Khách hàng <span class="required">*</span>
+                <input id="customer" required maxlength="120" placeholder="Ví dụ: Nguyễn Minh Anh" autocomplete="off">
+              </label>
+
+              <label>Key tùy chọn <span class="optional">Không bắt buộc</span>
+                <input id="customKey" maxlength="80" minlength="16" pattern="[A-Za-z0-9-]{16,80}" placeholder="Để trống để tạo tự động" autocomplete="off" spellcheck="false">
+                <small>Hoặc tự nhập 16–80 ký tự: chữ, số và dấu gạch ngang.</small>
+              </label>
+
+              <fieldset>
+                <legend>Thời hạn sử dụng</legend>
+                <div class="duration-presets" aria-label="Chọn nhanh thời hạn">
+                  <button type="button" data-days="7">7 ngày</button>
+                  <button type="button" class="selected" data-days="30" aria-pressed="true">30 ngày</button>
+                  <button type="button" data-days="90">90 ngày</button>
+                  <button type="button" data-days="365">1 năm</button>
+                </div>
+
+                <div class="duration-inputs">
+                  <label>Tự nhập thời hạn
+                    <input id="durationAmount" type="number" min="1" max="87600" step="1" value="30" required inputmode="numeric">
+                  </label>
+                  <label>Đơn vị
+                    <select id="durationUnit">
+                      <option value="days">Ngày</option>
+                      <option value="hours">Giờ</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="expiry-summary">
+                  <span>Hết hạn dự kiến</span>
+                  <strong id="expirySummary">—</strong>
+                </div>
+
+                <details id="dateOptions">
+                  <summary>Chọn ngày giờ cụ thể <span>＋</span></summary>
+                  <label>Ngày và giờ hết hạn
+                    <input id="expiry" type="text" placeholder="DD/MM/YYYY HH:mm" autocomplete="off" aria-describedby="dateHint">
+                    <small id="dateHint">Tự gõ, ví dụ: 25/12/2026 18:30 · giờ trên thiết bị của bạn.</small>
+                  </label>
+                </details>
+              </fieldset>
+
+              <label>Giới hạn thiết bị
+                <div class="device-input">
+                  <input id="maxDevices" type="number" min="1" max="100" value="1" required inputmode="numeric">
+                  <span>thiết bị / key</span>
+                </div>
+              </label>
+
+              <button type="submit" class="primary submit-button">＋ Tạo key kích hoạt</button>
+              <p class="form-note">◇ Có thể sao chép lại key trong danh sách sau khi tạo.</p>
+            </div>
+          </form>
+
+          <section class="panel list-panel">
+            <div class="list-heading">
+              <div>
+                <h2>Danh sách key <span id="listCount" class="count-badge">0</span></h2>
+                <p>Theo dõi và điều chỉnh quyền sử dụng</p>
+              </div>
+              <button id="refresh" class="secondary">↻ Làm mới</button>
+            </div>
+
+            <div class="list-toolbar">
+              <div class="filters" role="group" aria-label="Lọc trạng thái">
+                <button class="selected" data-filter="all" aria-pressed="true">Tất cả</button>
+                <button data-filter="active">Hoạt động</button>
+                <button data-filter="expired">Hết hạn</button>
+                <button data-filter="revoked">Đã thu hồi</button>
+              </div>
+              <label class="search">
+                <span aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input id="search" type="search" placeholder="Tìm khách hàng, key…" aria-label="Tìm khách hàng hoặc mã key">
+              </label>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Khách hàng / Key</th>
+                    <th>Trạng thái</th>
+                    <th>Hết hạn</th>
+                    <th>Thiết bị</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+
+            <div id="empty" class="empty-state" hidden>
+              <div class="empty-icon">⌘</div>
+              <h3 id="emptyTitle">Chưa có key nào</h3>
+              <p id="emptyText">Tạo key đầu tiên để bắt đầu quản lý quyền sử dụng.</p>
+              <button class="secondary" data-view-button="create">＋ Tạo key đầu tiên</button>
+            </div>
+
+            <div class="list-footer">
+              <span id="resultCount">0 key</span>
+              <span><i class="status-dot"></i> Tự cập nhật mỗi 30 giây</span>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <dialog id="newKey">
+        <div class="dialog-success">✓</div>
+        <p class="eyebrow">SẴN SÀNG KÍCH HOẠT</p>
+        <h2>Key của bạn</h2>
+        <p>Sao chép và gửi riêng cho khách hàng. Bạn có thể sao chép lại key từ danh sách quản lý.</p>
+        <code id="keyValue"></code>
+        <div class="dialog-actions">
+          <button id="copy" class="primary">Sao chép key</button>
+          <button id="closeKey" class="secondary">Đã lưu, đóng</button>
+        </div>
+      </dialog>
+
+      <dialog id="editKey">
+        <form id="edit">
+          <p class="eyebrow">QUẢN LÝ QUYỀN SỬ DỤNG</p>
+          <h2>Điều chỉnh key</h2>
+          <p>Gia hạn cũng khôi phục key đã thu hồi.</p>
+          <label>Khách hàng
+            <input id="editCustomer" required maxlength="120">
+          </label>
+          <label>Hết hạn lúc
+            <input id="editExpiry" type="text" required placeholder="DD/MM/YYYY HH:mm">
+            <small>Tự nhập theo định dạng ngày/tháng/năm giờ:phút.</small>
+          </label>
+          <div class="duration-presets edit-presets">
+            <button type="button" data-extend="7">＋7 ngày</button>
+            <button type="button" data-extend="30">＋30 ngày</button>
+            <button type="button" data-extend="90">＋90 ngày</button>
+          </div>
+          <label>Giới hạn thiết bị
+            <input id="editDevices" type="number" min="1" max="100" required inputmode="numeric">
+          </label>
+          <p id="editError" class="error-text" role="alert"></p>
+          <div class="dialog-actions">
+            <button type="submit" class="primary">Lưu thay đổi</button>
+            <button id="cancelEdit" class="secondary" type="button">Hủy</button>
+          </div>
+        </form>
+      </dialog>
+    </main>
+
+    <footer>
+      <span>© KeyZone Video Studio · Admin Console</span>
+      <span>Thời gian đồng bộ theo múi giờ trên thiết bị</span>
+    </footer>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Điều hướng điện thoại">
+    <button class="selected" data-view-button="list"><span>▦</span>Danh sách key</button>
+    <button data-view-button="create"><span>＋</span>Tạo key mới</button>
+    <a href="/"><span>↓</span>Tải ứng dụng</a>
+  </nav>
+</body>
+</html>

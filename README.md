@@ -27,11 +27,11 @@ Theo [Render Free](https://render.com/docs/free), dịch vụ ngủ sau 15 phút
 
 Render chỉ chạy máy chủ cấp key và website. Video và tài khoản Muse tiếp tục chạy/lưu trên thiết bị khách.
 
-## Bộ cài Windows 0.7.2 có kích hoạt key
+## Windows 0.7.3 và Android 0.7.3-beta.1
 
-Windows 0.7.2 đã có form nhập key trước khi vào studio và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. APK hiện tại chưa tích hợp key.
+Windows 0.7.3 có form nhập key trước khi vào studio và sửa lỗi logo bị chặn bởi proxy và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. Android 0.7.3-beta.1 đã có form nhập key, đồng bộ thời hạn, gỡ kích hoạt và kiểm tra key trong tác vụ nền. Phiên kích hoạt được mã hóa bằng Android Keystore; cần kiểm tra thêm trên điện thoại thật.
 
-Key được xác minh qua API khi vào ứng dụng, khi gọi API/tác vụ mới và mỗi 20 giây trong giao diện. Key hết hạn, bị thu hồi hoặc bị xóa sẽ bị chặn; không có chế độ offline. Tác vụ đang chạy có thể hoàn tất.
+Key được xác minh qua API khi vào ứng dụng, khi gọi API/tác vụ mới và mỗi 20 giây trong giao diện. Key hết hạn, bị thu hồi hoặc bị xóa sẽ bị chặn; không có chế độ offline. Tác vụ Windows đang chạy có thể hoàn tất; Android có kiểm tra nền để yêu cầu dừng khi key không còn hiệu lực.
 
 Build trong workspace Windows có đủ runtime:
 
@@ -49,7 +49,7 @@ Giao diện quản trị có bố cục desktop và mobile. Trên điện thoạ
 Thời hạn có thể chọn nhanh, tự nhập số ngày/giờ hoặc gõ ngày cụ thể theo `DD/MM/YYYY HH:mm` (múi giờ thiết bị). Trong cửa sổ gia hạn, có thể gõ ngày mới hoặc cộng thêm 7/30/90 ngày. Ô Key tùy chọn cho phép tự đặt mã 16–80 ký tự (chữ, số, dấu gạch ngang); mã được chuẩn hóa thành chữ hoa và từ chối nếu trùng. Để trống thì hệ thống vẫn sinh key ngẫu nhiên.
 
 - Tạo key với khách hàng, ngày giờ hết hạn và giới hạn thiết bị. Key tạo từ bản mới có nút Sao chép để lấy lại toàn bộ mã. Key cũ chỉ lưu hash nên không thể khôi phục; cần tạo key thay thế.
-- Thu hồi: các lần xác minh sau bị từ chối. Form ứng dụng kiểm tra mỗi 20 giây, khi lấy lại focus và khóa khi hết hạn. API và mỗi tác vụ nền mới kiểm tra trực tuyến riêng. Tác vụ đã chạy có thể hoàn tất; chưa có cơ chế hủy giữa chừng.
+- Thu hồi: các lần xác minh sau bị từ chối. Windows kiểm tra mỗi 20 giây; Android tối đa 30 giây, khi trở lại ứng dụng và trước khi bắt đầu tác vụ. API và mỗi tác vụ nền mới kiểm tra trực tuyến riêng. Tác vụ Windows đã chạy có thể hoàn tất. Android có kiểm tra nền để yêu cầu dừng tác vụ.
 - Gia hạn/sửa cũng khôi phục key đã thu hồi. Gỡ thiết bị buộc các máy nhập lại key.
 - Mất mạng hoặc máy chủ không truy cập được: khóa quyền sử dụng, không có chế độ dùng offline.
 - Thiết bị dùng mã ngẫu nhiên lưu trong thư mục dữ liệu; cài lại/xóa dữ liệu sẽ tính là máy mới. Đây chưa phải fingerprint phần cứng chống giả mạo.
@@ -77,3 +77,7 @@ Bộ kiểm thử chạy API với SQLite thật tại máy và fixture mô ph�
 Nút Xóa xóa key và mọi phiên kích hoạt trong cùng một thao tác database, không thể dùng lại key đã xóa. Mã hóa key sử dụng `KEYZONE_KEY_SECRET` nếu có, mặc định dùng mật khẩu admin hiện tại. Khi đổi mật khẩu admin, đặt `KEYZONE_KEY_SECRET` bằng giá trị đã dùng trước đó để tiếp tục giải mã key; giữ bí mật này riêng trên Render. Không thể khôi phục key cũ vốn chỉ lưu hash.
 
 Bộ cài 0.7.2 sửa lỗi cập nhật khi phiên cũ còn giữ `libvips-42.dll`: chạy script dừng đã xác minh từ chính bộ cài, chờ tiến trình kết thúc, dừng cài đặt nếu preflight thất bại và thử lại khi có khóa tệp ngắn hạn. Chỉ dừng tiến trình có executable nằm trong đúng thư mục cài KeyZone. Không xóa dữ liệu dự án.
+
+### Cập nhật 0.7.3
+
+Windows cho phép ảnh trong `/brand/` tải trực tiếp, không bị kiểm tra key hoặc viết lại ngôn ngữ; các trang và API vẫn được bảo vệ. Android kiểm tra trực tuyến khi mở ứng dụng, khi trở lại ứng dụng và định kỳ tối đa 30 giây; mất kết nối xác minh sẽ khóa quyền dùng. Tác vụ Android có kiểm tra nền và dừng khi key không còn hiệu lực. Cài đè APK mới bằng cùng chữ ký để giữ dữ liệu; gỡ ứng dụng sẽ xóa dữ liệu nội bộ.

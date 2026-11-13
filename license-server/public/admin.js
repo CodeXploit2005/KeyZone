@@ -60,7 +60,7 @@ function render() {
     cell('Thiết bị', 'device-count').textContent = `${key.device_count} / ${key.max_devices}`;
     const actions = cell(null, 'actions'), inner = document.createElement('div'); inner.className = 'actions-inner'; actions.append(inner);
     for (const [label, action] of [['Sao chép', 'copy'], ['Gia hạn', 'edit'], ['Thu hồi', 'revoke'], ['Gỡ máy', 'reset'], ['Xóa', 'delete']]) {
-      const button = document.createElement('button'); button.textContent = label;
+      const button = document.createElement('button'); button.textContent = label; button.dataset.action = action;
       button.setAttribute('aria-label', `${label} key của ${key.customer}`);
       if (action === 'revoke') { button.className = 'danger'; button.disabled = Boolean(key.revoked); }
       button.onclick = async () => {

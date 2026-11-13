@@ -1,54 +1,56 @@
 {
-  "filename": "KeyZone-Video-Studio-0.7.0-beta1-Android.apk",
-  "version": "0.7.0-beta.1",
+  "filename": "KeyZone-Video-Studio-0.7.3-beta1-Android.apk",
+  "version": "0.7.3-beta.1",
   "platform": "android",
-  "bytes": 70292728,
-  "sha256": "f89db861eaf20ecddc7101706dff97beaede5758c105982abd50383b604ac8d3",
+  "bytes": 70309112,
+  "sha256": "b8bb4453c0d420a624e817b5b7f454a756254925c11ffa0cff38d28122a00748",
+  "requiresLicense": true,
+  "licenseServer": "https://keyzone-6laz.onrender.com",
   "parts": [
     {
       "path": "downloads/android/part-000.bin",
       "bytes": 8388608,
-      "sha256": "029eda88112b4554c57f001da823317bc4b11a0ef2c585982bbf4180b128c606"
+      "sha256": "55c7a9efeef361f236bc214cbbc88704c1dfb4f5b29392244b937ec2203cec5b"
     },
     {
       "path": "downloads/android/part-001.bin",
       "bytes": 8388608,
-      "sha256": "b15dd469e7cc8c13f0132300abfa1e37bc1532c6138f6b00cc3c78f6c7bd8400"
+      "sha256": "1cf6f96e0f04c3eb63262b38240c146629688e0ef59e71103623dbdb3782e9d5"
     },
     {
       "path": "downloads/android/part-002.bin",
       "bytes": 8388608,
-      "sha256": "0419df9c8abacefea8589462986b26bba287443cffabde29a7e21f4857232593"
+      "sha256": "1ceacd4217e2646cfa2a8327a737075997771fd68d8ea99859c84d3b999eb64f"
     },
     {
       "path": "downloads/android/part-003.bin",
       "bytes": 8388608,
-      "sha256": "c682b5251c6ec7e54eb93f77c000739a8f42e85b299e5c743fb0454df8230a06"
+      "sha256": "8cef50209b3e8b30a5a3072c55888088e652ae2270e7343ecb9bf03eb8cb7f1d"
     },
     {
       "path": "downloads/android/part-004.bin",
       "bytes": 8388608,
-      "sha256": "8e34567e1c7d71f0ea44aef3dbb43daa2a666731b89263d155cd534914ec2358"
+      "sha256": "39017c9309840a5381a0eebe8fad60cbd904700fae43b4f7ea3cb4e87972a9f7"
     },
     {
       "path": "downloads/android/part-005.bin",
       "bytes": 8388608,
-      "sha256": "f2d9e4f20390d961941df9bb4bd296eee6490c39ca9f33a1c108ad35382e3d96"
+      "sha256": "c0e5289663e1d03607ae2e1f5d4a83877ddcb373e8096a531f602fe1ed871fb6"
     },
     {
       "path": "downloads/android/part-006.bin",
       "bytes": 8388608,
-      "sha256": "3fe085994e970a2cc24511d1fb13d0b2a854b91886103ba8a514a8a57180f25f"
+      "sha256": "0721d16e533ff24b9e0fc35f89857c8e89b1acf9e2a0b35094e6a7dd7fe5e09e"
     },
     {
       "path": "downloads/android/part-007.bin",
       "bytes": 8388608,
-      "sha256": "5fe071e76060ec940e89995b4947d81c427718659d2e93c81c1969daa94e5942"
+      "sha256": "27970c788382386734d46a0e415f1e2eda9cd1ed6f5e6bac49d0e160d45fb2b1"
     },
     {
       "path": "downloads/android/part-008.bin",
-      "bytes": 3183864,
-      "sha256": "9cd8fe46f1bfe46ae615b318c1578cb030ded52e41f791256516902d08c89449"
+      "bytes": 3200248,
+      "sha256": "f4df8e953a5d6ba0638cc240fbf3944090e4493fa819bb439bc49034e5525413"
     }
   ]
 }

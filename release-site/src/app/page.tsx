@@ -20,7 +20,7 @@ import { DownloadCenter } from "@/components/DownloadCenter";
 const FAQ_ITEMS = [
   {
     q: "Key kích hoạt hoạt động như thế nào?",
-    a: "Bản Windows tích hợp bản quyền yêu cầu key còn hiệu lực và kết nối Internet. Quản trị viên cấp thời hạn, số thiết bị và có thể thu hồi key từ xa. Bộ cài Windows 0.7.2 đã có form nhập key và đồng bộ với máy chủ quản lý bản quyền.",
+    a: "Bản Windows và Android yêu cầu key còn hiệu lực và kết nối Internet. Quản trị viên cấp thời hạn, số thiết bị và có thể thu hồi key từ xa. Windows 0.7.3 và Android 0.7.3-beta.1 có form nhập key và đồng bộ thời hạn với máy chủ quản lý bản quyền.",
   },
   {
     q: "Tôi có cần tài khoản Muse không?",
@@ -111,7 +111,7 @@ export default function ReleasePage() {
               <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
               <span>STUDIO CỦA BẠN • TRÊN MÁY CỦA BẠN</span>
               <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 font-mono text-[10px] text-cyan-200">
-                v0.7.2
+                v0.7.3
               </span>
             </div>
 
@@ -376,7 +376,7 @@ export default function ReleasePage() {
 
         {/* DOWNLOAD COMMAND CENTER (Matches Reference Image 1) */}
         <section id="download" className="mx-auto max-w-5xl px-6 py-20">
-          <p className="mb-6 rounded-xl border border-amber-300/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Windows 0.7.2 đã có form kích hoạt key, đồng bộ thời hạn từ máy chủ và sửa lỗi cập nhật khi ứng dụng cũ còn chạy. Nếu đang dùng bản 0.7.0, hãy tải và cài bản mới để cập nhật. APK hiện tại chưa tích hợp key.</p>
+          <p className="mb-6 rounded-xl border border-amber-300/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Windows 0.7.3 sửa lỗi logo không hiển thị và giữ bản sửa lỗi cài cập nhật. Android 0.7.3-beta.1 bổ sung nhập key, kiểm tra thời hạn và gỡ kích hoạt thiết bị. Hãy tải bản mới để cập nhật; Android vẫn cần kiểm tra thêm trên điện thoại thật.</p>
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-[#1e163b] px-3.5 py-1.5 text-xs font-semibold text-violet-200">
               <TrendingUp className="h-3.5 w-3.5 text-violet-300" />

@@ -26,6 +26,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip API routes, Next internals and files with an extension (icon.svg, images…).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
+  // Public branding must bypass both license checks and locale rewrites.
+  // Keep application pages and API routes behind the license gate.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|brand/).*)"],
 };

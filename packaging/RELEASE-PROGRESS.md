@@ -1,3 +1,29 @@
+# Windows 0.7.3 and Android 0.7.3-beta.1 — 2026-11-13
+
+Windows: release-build/KeyZone-Video-Studio-Setup-0.7.3.exe
+305699999 bytes; SHA256 0ef26f3fe4e24d50443e37087dcd59963a44e9bb7dcdc1d212809c44bdf5ce6c.
+Rebuilt from current source with the /brand/ proxy exemption. Actual isolated installation passed: logo returns image/png with original bytes, without redirect, for vi/en and query strings; app and API still require activation. Report: release-build/qa-logo-0.7.3.json. Does not modify the user's existing installation or project data.
+
+Android: android-build/KeyZone-Video-Studio-0.7.3-beta1-Android.apk
+70309112 bytes; SHA256 b8bb4453c0d420a624e817b5b7f454a756254925c11ffa0cff38d28122a00748.
+Includes native online activation, encrypted session persistence, expiry and revocation checks, device release and PNG logo MIME fix. Signature matches previous Android beta; versionCode 8. Java policy and UI tests passed. Physical-device and live-key testing remain outstanding.
+
+Portal static build passed. Both download manifests reconstruct the new artifacts exactly. Publication checkout API/UI suite: 10/10 passed. Preserves the existing admin redesign.
+
+# Windows 0.7.1 — 2026-11-13
+
+Release: release-build/KeyZone-Video-Studio-Setup-0.7.1.exe
+305697173 bytes; SHA256 4728cb643dea61a7998e467ad4eda497e58e88a38df2719a416530d54560cdf8.
+License endpoint: https://keyzone-6laz.onrender.com
+
+Actual isolated installer exited 0. Installed app and API are blocked before key activation. A temporary key issued on live Render/Turso activated the installed studio. Revoking it invalidated the existing session and blocked studio entry. Deleting it removed the key/session. Full-key copy worked against the live server and in browser clipboard QA. Temporary remote key was deleted; isolated QA processes stopped.
+
+Report: release-build/qa-license-data-071/license-qa-report.json
+Gate screenshot: ui-previews/windows-license-0.7.1.jpg
+9 server/unit test groups passed, including legacy database migration and atomic session deletion. Download parts reconstruct the exact installer hash. Android remains the older build without key enforcement.
+
+Previous release notes follow.
+
 # Release status — 2026-11-12
 
 Windows 0.7.0: release-build/KeyZone-Video-Studio-Setup-0.7.0.exe

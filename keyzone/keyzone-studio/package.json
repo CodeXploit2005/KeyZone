@@ -1,6 +1,6 @@
 {
   "name": "keyzone-studio",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "private": true,
   "description": "AI video studio: niche-aware scripts, a recurring character and automatic rendering, powered by Meta Muse",
   "license": "MIT",
