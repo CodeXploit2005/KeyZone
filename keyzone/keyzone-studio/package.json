@@ -1,0 +1,66 @@
+{
+  "name": "keyzone-studio",
+  "version": "0.7.0",
+  "private": true,
+  "description": "AI video studio: niche-aware scripts, a recurring character and automatic rendering, powered by Meta Muse",
+  "license": "MIT",
+  "keywords": [
+    "meta-muse",
+    "muse-ai",
+    "muse-api",
+    "muse-video-api",
+    "ai-video-generator",
+    "text-to-video",
+    "image-to-video",
+    "short-video",
+    "tiktok",
+    "youtube-shorts",
+    "instagram-reels",
+    "faceless-video",
+    "nextjs",
+    "ffmpeg"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "worker": "tsx --env-file=.env src/worker/index.ts",
+    "db:check": "node --env-file=.env scripts/check-database.mjs",
+    "db:push": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs push",
+    "db:seed": "tsx --env-file=.env scripts/seed.ts",
+    "niches:export": "tsx --env-file=.env scripts/export-niches.ts",
+    "typecheck": "tsc --noEmit",
+    "worker:watch": "tsx watch --env-file=.env src/worker/index.ts"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "drizzle-orm": "0.45.4",
+    "lucide-react": "^1.61.0",
+    "next": "16.4.3",
+    "pg": "8.23.1",
+    "pg-boss": "12.38.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "satori": "^0.63.2",
+    "sharp": "^0.35.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "0.31.11",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "tailwindcss": "^4",
+    "tsx": "4.23.15",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@9.15.3"
+}

@@ -1,0 +1,706 @@
+"use server";
+import { requireLicense } from "@/lib/license";
+
+
+import { and, count, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import path from "node:path";
+import { z } from "zod";
+import { db } from "@/db";
+import { NICHE_COOKIE } from "@/lib/active-niche";
+import { hasLocale, LOCALE_COOKIE } from "@/i18n/config";
+import { getActionDictionary } from "@/i18n/action";
+import {
+  characters,
+  facebookPages,
+  nicheCharacters,
+  nicheFormatEnum,
+  niches,
+  projectCharacters,
+  projects,
+  scenes,
+  shorts,
+  type ReelPost,
+} from "@/db/schema";
+import {
+  enqueueCharacterReference,
+  enqueueReelPost,
+  enqueuePosts,
+  enqueueRender,
+  enqueueScenes,
+  enqueueScript,
+  enqueueShortRenders,
+  enqueueShortsPlan,
+  enqueueThumbnail,
+} from "@/lib/queue";
+import { mediaDuration } from "@/lib/pipeline/render";
+import { fetchPage, REEL_SCHEDULE_MAX_MS, REEL_SCHEDULE_MIN_MS } from "@/lib/providers/facebook";
+import { fetchInstagramAccount } from "@/lib/providers/instagram";
+import { REFERENCE_KEY } from "@/lib/reference-image";
+import { MAX_PROJECT_SCENES } from "@/lib/pipeline/prompts";
+import { pauseScenes } from "@/lib/production";
+import { MAX_SCRIPT_CHARS, validateImportedScenes } from "@/lib/imported-script";
+import { MAX_PRODUCT_IMAGES } from "@/lib/product-reference";
+import { SOUNDTRACK_KEY } from "@/lib/soundtrack";
+import { THUMBNAIL_STYLES } from "@/lib/thumbnail-styles";
+import { resolveKey, saveFile } from "@/lib/storage";
+
+/** Largest cast a project (or a niche's default cast) can have. */
+const MAX_CAST = 8;
+
+/** An ordered cast posted as comma-separated character ids, lead first. */
+const castIdsSchema = z
+  .string()
+  .default("")
+  .transform((v) => [...new Set(v.split(",").filter(Boolean))])
+  .pipe(z.array(z.uuid()).max(MAX_CAST));
+
+// ---------------------------------------------------------------- niches
+
+const nicheSchema = z.object({
+  name: z.string().trim().min(1),
+  slug: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, "slug: lowercase letters, numbers and hyphens only"),
+  icon: z.string().trim().min(1).max(8).default("✦"),
+  format: z.enum(nicheFormatEnum.enumValues).default("story"),
+  // An unchecked checkbox is simply missing from the form data.
+  fixedCamera: z
+    .string()
+    .optional()
+    .transform((v) => v === "on"),
+  description: z.string().trim().default(""),
+  scriptInstructions: z.string().trim().min(1),
+  tone: z.string().trim().default(""),
+  visualStyle: z.string().trim().default(""),
+  sceneCount: z.coerce.number().int().min(1).max(40),
+  sceneSeconds: z.coerce.number().int().min(4).max(10),
+  language: z.string().trim().min(1),
+  defaultAspectRatio: z.enum(["9:16", "16:9"]).default("9:16"),
+  defaultCastIds: castIdsSchema,
+  narratorVoiceId: z
+    .string()
+    .trim()
+    .default("")
+    .transform((v) => v || null),
+  thumbnailStyle: z.enum(THUMBNAIL_STYLES).default("impact"),
+  thumbnailAccent: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "accent: a colour like #FFC23D")
+    .default("#FFC23D"),
+  thumbnailBrand: z.string().trim().max(32).default(""),
+  postsInstructions: z.string().trim().default(""),
+  facebookPageId: z
+    .string()
+    .trim()
+    .regex(/^\d*$/, "Facebook Page ID: digits only")
+    .default("")
+    .transform((v) => v || null),
+  // Write-only: left empty, the Page keeps the token it has.
+  facebookPageToken: z.string().trim().default(""),
+});
+
+async function setActiveNiche(id: string) {
+  (await cookies()).set(NICHE_COOKIE, id, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+    httpOnly: true,
+  });
+}
+
+export async function selectNiche(id: string) {
+  await requireLicense();
+  await setActiveNiche(id);
+  redirect("/");
+}
+
+export async function saveNiche(id: string | null, formData: FormData, returnLocation = false) {
+  await requireLicense();
+  const { defaultCastIds, facebookPageToken, ...data } = nicheSchema.parse(Object.fromEntries(formData));
+  // Checked against Facebook before anything is saved, so a wrong token or Page ID never sticks.
+  const [page, instagram] =
+    facebookPageToken && data.facebookPageId
+      ? await Promise.all([
+          fetchPage(data.facebookPageId, facebookPageToken),
+          fetchInstagramAccount(data.facebookPageId, facebookPageToken),
+        ])
+      : [null, null];
+  const nicheId = await db.transaction(async (tx) => {
+    if (page) {
+      const fields = {
+        name: page.name,
+        accessToken: facebookPageToken,
+        instagramId: instagram?.id ?? null,
+        instagramUsername: instagram?.username ?? null,
+      };
+      await tx
+        .insert(facebookPages)
+        .values({ id: page.id, ...fields })
+        .onConflictDoUpdate({ target: facebookPages.id, set: fields });
+    }
+    const [row] = id
+      ? await tx.update(niches).set(data).where(eq(niches.id, id)).returning({ id: niches.id })
+      : await tx.insert(niches).values(data).returning({ id: niches.id });
+    await tx.delete(nicheCharacters).where(eq(nicheCharacters.nicheId, row.id));
+    if (defaultCastIds.length) {
+      await tx
+        .insert(nicheCharacters)
+        .values(defaultCastIds.map((characterId, position) => ({ nicheId: row.id, characterId, position })));
+    }
+    return row.id;
+  });
+  if (id) {
+    revalidatePath("/", "layout");
+    if (returnLocation) return "/niches";
+    redirect("/niches");
+  }
+  // A freshly created niche becomes the active one: that is why it was created.
+  await setActiveNiche(nicheId);
+  if (returnLocation) return "/";
+  redirect("/");
+}
+
+export async function deleteNiche(id: string, returnLocation = false) {
+  await requireLicense();
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(projects)
+    .where(eq(projects.nicheId, id));
+  if (total > 0) {
+    throw new Error((await getActionDictionary()).errors.nicheHasVideos(total));
+  }
+  await db.delete(niches).where(eq(niches.id, id));
+  const store = await cookies();
+  if (store.get(NICHE_COOKIE)?.value === id) store.delete(NICHE_COOKIE);
+  revalidatePath("/", "layout");
+  if (returnLocation) return "/niches";
+  redirect("/niches");
+}
+
+// ------------------------------------------------------------ characters
+
+const characterSchema = z.object({
+  name: z.string().trim().min(1),
+  appearance: z.string().trim().min(1),
+  personality: z.string().trim().default(""),
+  referenceMode: z.enum(["keep", "upload", "generate"]).default("keep"),
+});
+
+const IMAGE_EXT: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+};
+
+export async function saveCharacter(id: string | null, formData: FormData) {
+  await requireLicense();
+  const { referenceMode, ...fields } = characterSchema.parse({
+    name: formData.get("name"),
+    appearance: formData.get("appearance"),
+    personality: formData.get("personality") ?? "",
+    referenceMode: formData.get("referenceMode") ?? "keep",
+  });
+
+  const [row] = id
+    ? await db.update(characters).set(fields).where(eq(characters.id, id)).returning()
+    : await db.insert(characters).values(fields).returning();
+
+  if (referenceMode === "upload") {
+    const file = formData.get("referenceImage");
+    if (!(file instanceof File) || file.size === 0) {
+      throw new Error((await getActionDictionary()).errors.noReferenceImage);
+    }
+    const ext = IMAGE_EXT[file.type] ?? (path.extname(file.name) || ".png");
+    const key = await saveFile(
+      `characters/${row.id}/reference${ext}`,
+      Buffer.from(await file.arrayBuffer()),
+    );
+    await db
+      .update(characters)
+      .set({ referenceImagePath: key, referenceStatus: "ready", referenceError: null })
+      .where(eq(characters.id, row.id));
+  } else if (referenceMode === "generate") {
+    await db
+      .update(characters)
+      .set({ referenceStatus: "generating", referenceError: null })
+      .where(eq(characters.id, row.id));
+    await enqueueCharacterReference(row.id);
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/characters");
+}
+
+export async function deleteCharacter(id: string) {
+  await requireLicense();
+  await deleteCharacterFromLibrary(id);
+  redirect("/characters");
+}
+
+export async function deleteCharacterFromLibrary(id: string) {
+  await requireLicense();
+  await db.delete(characters).where(eq(characters.id, id));
+  revalidatePath("/", "layout");
+}
+
+// -------------------------------------------------------------- projects
+
+const productImagePathsSchema = z.preprocess(value => {
+  if (typeof value === "string") { try { return JSON.parse(value); } catch { return null; } }
+  return value ?? [];
+}, z.array(z.string().regex(REFERENCE_KEY)).max(MAX_PRODUCT_IMAGES).transform(keys => [...new Set(keys)]));
+
+const projectSchema = z.object({
+  productImagePaths: productImagePathsSchema,
+  referenceImageKind: z.enum(["place", "product"]).default("place"),
+  topic: z.string().trim().min(3),
+  // Missing or empty: the niche's count.
+  sceneCount: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().min(1).max(MAX_PROJECT_SCENES).optional(),
+  ),
+  nicheId: z.uuid(),
+  castIds: castIdsSchema,
+  aspectRatio: z.enum(["9:16", "16:9"]),
+  audioPath: z
+    .union([z.string().regex(SOUNDTRACK_KEY), z.literal("")])
+    .default("")
+    .transform((v) => v || null),
+  referenceImagePath: z
+    .union([z.string().regex(REFERENCE_KEY), z.literal("")])
+    .default("")
+    .transform((v) => v || null),
+});
+
+export async function createProject(formData: FormData) {
+  await requireLicense();
+  const { castIds, ...data } = projectSchema.parse(Object.fromEntries(formData));
+  if (data.referenceImageKind === "product" && data.productImagePaths.length) data.referenceImagePath = data.productImagePaths[0];
+  const niche = await db.query.niches.findFirst({
+    where: eq(niches.id, data.nicheId),
+    columns: { format: true },
+  });
+  if (niche?.format === "ambient" && !data.audioPath) {
+    throw new Error((await getActionDictionary()).errors.noSoundtrack);
+  }
+  const audioSeconds = data.audioPath ? await mediaDuration(resolveKey(data.audioPath)) : null;
+  const row = await db.transaction(async (tx) => {
+    const [project] = await tx
+      .insert(projects)
+      .values({ ...data, audioSeconds, title: data.topic.slice(0, 80), status: "scripting" })
+      .returning({ id: projects.id });
+    if (castIds.length) {
+      await tx
+        .insert(projectCharacters)
+        .values(castIds.map((characterId, position) => ({ projectId: project.id, characterId, position })));
+    }
+    return project;
+  });
+  await enqueueScript(row.id);
+  redirect(`/projects/${row.id}`);
+}
+
+const importedProjectSchema = z.object({
+  productImagePaths: productImagePathsSchema,
+  referenceImageKind: z.enum(["place", "product"]).default("place"),
+  referenceImagePath: z.union([z.string().regex(REFERENCE_KEY), z.literal("")]).default("").transform(v => v || null),
+  nicheId: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  aspectRatio: z.enum(["9:16", "16:9"]),
+  castIds: castIdsSchema,
+  sourceText: z.string().max(MAX_SCRIPT_CHARS),
+  scenes: z.array(z.object({ visualPrompt: z.string().trim().min(1).max(12_000), narration: z.string().trim().max(12_000), camera: z.string().trim().max(12_000), continuesPrevious: z.boolean().default(false) })).min(1).max(MAX_PROJECT_SCENES),
+});
+
+export async function createImportedProject(_previous: { error: string } | null, formData: FormData): Promise<{ error: string } | null> {
+  await requireLicense();
+  let projectId: string;
+  try {
+    if (formData.get("reviewed") !== "on") return { error: "Hãy kiểm tra các cảnh và xác nhận trước khi nhập." };
+    const input = importedProjectSchema.parse({ ...Object.fromEntries(formData), scenes: JSON.parse(String(formData.get("scenePayload") ?? "null")) });
+    const errors = validateImportedScenes(input.scenes);
+    if (errors.length) return { error: errors[0] };
+    const niche = await db.query.niches.findFirst({ where: eq(niches.id, input.nicheId), columns: { id: true } });
+    if (!niche) return { error: "Ngách không còn tồn tại. Hãy chọn lại ngách." };
+    if (input.castIds.length) {
+      const available = await db.select({ id: characters.id }).from(characters).where(inArray(characters.id, input.castIds));
+      if (available.length !== input.castIds.length) return { error: "Có nhân vật không còn tồn tại. Hãy chọn lại nhân vật." };
+    }
+    projectId = await db.transaction(async tx => {
+      const [project] = await tx.insert(projects).values({
+        nicheId: input.nicheId, title: input.title, topic: input.sourceText || input.title,
+        aspectRatio: input.aspectRatio, sceneCount: input.scenes.length,
+        referenceImagePath: input.productImagePaths[0] ?? input.referenceImagePath, referenceImageKind: input.referenceImageKind,
+        productImagePaths: input.productImagePaths,
+        scriptSource: input.scenes.some(scene => scene.narration) ? "imported-story" : "imported-wordless",
+        status: "script_ready",
+      }).returning({ id: projects.id });
+      if (input.castIds.length) await tx.insert(projectCharacters).values(input.castIds.map((characterId, position) => ({ projectId: project.id, characterId, position })));
+      await tx.insert(scenes).values(input.scenes.map((scene, index) => ({ ...scene, continuesPrevious: index > 0 && scene.continuesPrevious, projectId: project.id, index, characterIds: input.castIds })));
+      return project.id;
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError || error instanceof SyntaxError) return { error: "Kịch bản chưa hợp lệ. Kiểm tra tên video, số cảnh và prompt từng cảnh." };
+    console.error("[script import] Could not save imported script", error instanceof Error ? error.name : "Unknown error");
+    return { error: "Chưa lưu được kịch bản. Vui lòng thử lại." };
+  }
+  // No generation, screening or production jobs are enqueued by an import.
+  redirect(`/projects/${projectId}`);
+}
+
+export async function regenerateScript(projectId: string) {
+  await requireLicense();
+  const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { scriptSource: true } });
+  if (project?.scriptSource.startsWith("imported-")) throw new Error("Kịch bản nhập sẵn không được tự viết lại. Hãy chỉnh trực tiếp từng cảnh.");
+  await db
+    .update(projects)
+    .set({ status: "scripting", error: null })
+    .where(eq(projects.id, projectId));
+  await enqueueScript(projectId);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+const sceneInputSchema = z.array(
+  z.object({
+    narration: z.string().trim(),
+    visualPrompt: z.string().trim().min(1),
+    camera: z.string().trim().default(""),
+    continuesPrevious: z.boolean().default(false),
+    characterIds: z.array(z.uuid()).max(MAX_CAST).default([]),
+  }),
+);
+
+export type SceneInput = z.input<typeof sceneInputSchema>[number];
+
+async function replaceScenes(projectId: string, title: string, input: SceneInput[]) {
+  const parsed = sceneInputSchema.min(1).max(MAX_PROJECT_SCENES).parse(input);
+  const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { scriptSource: true } });
+  if (!project?.scriptSource.startsWith("imported-") && parsed.some(scene => !scene.narration)) throw new Error("Mỗi cảnh cần nội dung lời dẫn hoặc ghi chú.");
+  return db.transaction(async (tx) => {
+    await tx.delete(scenes).where(eq(scenes.projectId, projectId));
+    await tx.update(projects).set({ title: title.trim() || "Untitled", sceneCount: parsed.length,
+      ...(project?.scriptSource.startsWith("imported-") ? { scriptSource: parsed.some(scene => scene.narration) ? "imported-story" : "imported-wordless" } : {}),
+    }).where(eq(projects.id, projectId));
+    return tx
+      .insert(scenes)
+      // Scene 1 has nothing before it to carry on from.
+      .values(parsed.map((s, index) => ({ ...s, continuesPrevious: index > 0 && s.continuesPrevious, projectId, index })))
+      .returning({ id: scenes.id });
+  });
+}
+
+export async function saveScript(projectId: string, title: string, input: SceneInput[]) {
+  await requireLicense();
+  await replaceScenes(projectId, title, input);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function approveAndProduce(projectId: string, title: string, input: SceneInput[]) {
+  await requireLicense();
+  const inserted = await replaceScenes(projectId, title, input);
+  await db
+    .update(projects)
+    .set({ status: "producing", error: null, finalVideoPath: null, captionsPath: null })
+    .where(eq(projects.id, projectId));
+  await enqueueScenes(inserted.map((s) => s.id));
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/** Stops a project's production; see pauseScenes. */
+export async function pauseProduction(projectId: string) {
+  await requireLicense();
+  await pauseScenes(projectId);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function retryScenes(
+  projectId: string,
+  sceneIds: string[],
+  opts: { newKeyframe: boolean },
+) {
+  await requireLicense();
+  if (sceneIds.length === 0) return;
+  await db.transaction(async (tx) => {
+    await tx
+      .update(scenes)
+      .set({
+        status: "pending",
+        error: null,
+        clipPath: null,
+        ...(opts.newKeyframe ? { keyframePath: null } : {}),
+      })
+      .where(and(eq(scenes.projectId, projectId), inArray(scenes.id, sceneIds)));
+    await tx
+      .update(projects)
+      .set({ status: "producing", error: null })
+      .where(eq(projects.id, projectId));
+  });
+  await enqueueScenes(sceneIds);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/** Rewrites one scene after production (e.g. Muse refused it) and queues it again. */
+export async function editScene(
+  projectId: string,
+  sceneId: string,
+  input: SceneInput,
+  opts: { newKeyframe: boolean },
+) {
+  await requireLicense();
+  const fields = sceneInputSchema.element.parse(input);
+  const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { scriptSource: true } });
+  if (!project?.scriptSource.startsWith("imported-") && !fields.narration) throw new Error("Cảnh này cần lời dẫn hoặc ghi chú.");
+  const updated = await db.transaction(async (tx) => {
+    const rows = await tx
+      .update(scenes)
+      .set({
+        ...fields,
+        status: "pending",
+        error: null,
+        clipPath: null,
+        ...(opts.newKeyframe ? { keyframePath: null } : {}),
+      })
+      .where(and(eq(scenes.id, sceneId), eq(scenes.projectId, projectId)))
+      .returning({ id: scenes.id });
+    if (rows.length === 0) return false;
+    const importedScenes = project?.scriptSource.startsWith("imported-")
+      ? await tx.select({ narration: scenes.narration }).from(scenes).where(eq(scenes.projectId, projectId)) : null;
+    await tx
+      .update(projects)
+      .set({ status: "producing", error: null, finalVideoPath: null, captionsPath: null,
+        ...(importedScenes ? { scriptSource: importedScenes.some(scene => scene.narration.trim()) ? "imported-story" : "imported-wordless" } : {}),
+      })
+      .where(eq(projects.id, projectId));
+    return true;
+  });
+  if (!updated) return;
+  await enqueueScenes([sceneId]);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function rerender(projectId: string) {
+  await requireLicense();
+  await db.update(projects).set({ status: "rendering", error: null }).where(eq(projects.id, projectId));
+  await enqueueRender(projectId);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/** Swaps the soundtrack of an ambient video; a finished video is rendered again with it. */
+export async function replaceSoundtrack(projectId: string, audioPath: string) {
+  await requireLicense();
+  const key = z.string().regex(SOUNDTRACK_KEY).parse(audioPath);
+  const audioSeconds = await mediaDuration(resolveKey(key));
+  const [row] = await db
+    .update(projects)
+    .set({ audioPath: key, audioSeconds })
+    .where(eq(projects.id, projectId))
+    .returning({ status: projects.status });
+  if (row?.status === "done") {
+    await db.update(projects).set({ status: "rendering", error: null }).where(eq(projects.id, projectId));
+    await enqueueRender(projectId);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/**
+ * Sets or clears the place reference photo. Only images drawn from now on use it; redraw a
+ * scene's image to apply it there.
+ */
+export async function setReferenceImage(projectId: string, key: string | null) {
+  await requireLicense();
+  const referenceImagePath = key === null ? null : z.string().regex(REFERENCE_KEY).parse(key);
+  await db.update(projects).set({ referenceImagePath }).where(eq(projects.id, projectId));
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/** Writes the platform captions again, e.g. when the first ones missed the mark. */
+export async function regeneratePosts(projectId: string) {
+  await requireLicense();
+  const rows = await db
+    .update(projects)
+    .set({ postsStatus: "writing", postsError: null })
+    .where(and(eq(projects.id, projectId), eq(projects.status, "done")))
+    .returning({ id: projects.id });
+  if (rows.length === 0) return;
+  await enqueuePosts(projectId);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+const thumbnailInputSchema = z.object({
+  text: z.string().trim().min(1).max(80),
+  prompt: z.string().trim().min(1),
+  background: z.enum(["ai", "scene"]),
+  scene: z.coerce.number().int().min(1),
+});
+
+export type ThumbnailInput = z.infer<typeof thumbnailInputSchema>;
+
+/**
+ * Saves the thumbnail settings and redraws it. The background is only regenerated when it has
+ * to be (`newImage`, or a different background source, scene or prompt); a headline edit
+ * just re-lays the text.
+ */
+export async function updateThumbnail(projectId: string, input: ThumbnailInput, opts: { newImage: boolean }) {
+  await requireLicense();
+  const fields = thumbnailInputSchema.parse(input);
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { thumbnail: true },
+  });
+  if (!project?.thumbnail) return;
+  const old = project.thumbnail;
+  const sameBackground =
+    !opts.newImage &&
+    fields.background === old.background &&
+    (fields.background === "scene" ? fields.scene === old.scene : fields.prompt === old.prompt);
+  await db
+    .update(projects)
+    .set({
+      thumbnail: { ...old, ...fields, basePath: sameBackground ? old.basePath : null },
+      thumbnailStatus: "drawing",
+      thumbnailError: null,
+    })
+    .where(eq(projects.id, projectId));
+  await enqueueThumbnail(projectId);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/** Asks the AI to pick the best moments of a finished video again and cuts new Shorts. */
+export async function cutShorts(projectId: string) {
+  await requireLicense();
+  const rows = await db
+    .update(projects)
+    .set({ shortsStatus: "writing", shortsError: null })
+    .where(and(eq(projects.id, projectId), eq(projects.status, "done")))
+    .returning({ id: projects.id });
+  if (rows.length === 0) return;
+  await enqueueShortsPlan(projectId);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+const shortInputSchema = z
+  .object({
+    hook: z.string().trim().min(1).max(80),
+    title: z.string().trim().min(1).max(100),
+    description: z.string().trim().max(5000).default(""),
+    fromScene: z.coerce.number().int().min(0),
+    toScene: z.coerce.number().int().min(0),
+  })
+  .refine((v) => v.toScene >= v.fromScene, { message: "The last scene comes before the first one" });
+
+export type ShortInput = z.input<typeof shortInputSchema>;
+
+/**
+ * Saves a Short's hook, scenes and captions. The clip is cut again only when what is on screen
+ * changed (hook or scenes); a new title or description is just saved.
+ */
+export async function updateShort(projectId: string, shortId: string, input: ShortInput) {
+  await requireLicense();
+  const fields = shortInputSchema.parse(input);
+  const short = await db.query.shorts.findFirst({
+    where: and(eq(shorts.id, shortId), eq(shorts.projectId, projectId)),
+    columns: { hook: true, fromScene: true, toScene: true, status: true },
+  });
+  if (!short) return;
+  const recut =
+    short.status === "failed" ||
+    fields.hook !== short.hook ||
+    fields.fromScene !== short.fromScene ||
+    fields.toScene !== short.toScene;
+  await db
+    .update(shorts)
+    .set({ ...fields, ...(recut ? { status: "rendering" as const, error: null } : {}) })
+    .where(eq(shorts.id, shortId));
+  if (recut) await enqueueShortRenders([shortId]);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+const reelSchema = z.object({
+  caption: z.string().trim().max(2200),
+  /** ISO time; null posts the reel right away. */
+  publishAt: z.iso.datetime().nullable(),
+});
+
+export type ReelInput = z.infer<typeof reelSchema>;
+export type ReelPlatform = "facebook" | "instagram";
+export type ReelTarget = { kind: "project" | "short"; id: string };
+
+function reelColumn(platform: ReelPlatform, kind: ReelTarget["kind"]) {
+  if (kind === "project") return platform === "facebook" ? projects.facebookReel : projects.instagramReel;
+  return platform === "facebook" ? shorts.facebookReel : shorts.instagramReel;
+}
+
+/** Writes a reel's state when `when` holds; true when the row was updated. */
+async function setReel(projectId: string, platform: ReelPlatform, target: ReelTarget, reel: ReelPost | null, when: SQL) {
+  const set = platform === "facebook" ? { facebookReel: reel } : { instagramReel: reel };
+  const rows =
+    target.kind === "project"
+      ? await db
+          .update(projects)
+          .set(set)
+          .where(and(eq(projects.id, target.id), eq(projects.id, projectId), when))
+          .returning({ id: projects.id })
+      : await db
+          .update(shorts)
+          .set(set)
+          .where(and(eq(shorts.id, target.id), eq(shorts.projectId, projectId), when))
+          .returning({ id: shorts.id });
+  return rows.length > 0;
+}
+
+/**
+ * Queues a finished vertical video ("project") or a Short as a Facebook or Instagram reel.
+ * Facebook schedules the reel itself; an Instagram reel waits in KeyZone's queue until its time.
+ */
+export async function postReel(projectId: string, platform: ReelPlatform, target: ReelTarget, input: ReelInput) {
+  await requireLicense();
+  const { caption, publishAt } = reelSchema.parse(input);
+  if (publishAt) {
+    const ahead = new Date(publishAt).getTime() - Date.now();
+    if (ahead < REEL_SCHEDULE_MIN_MS || ahead > REEL_SCHEDULE_MAX_MS) {
+      throw new Error((await getActionDictionary()).errors.reelScheduleRange);
+    }
+  }
+  const waits = platform === "instagram" && publishAt;
+  const reel: ReelPost = { status: waits ? "scheduled" : "uploading", caption, publishAt, videoId: null, error: null };
+  // A reel already uploading, scheduled or published is left alone: only a new or failed one is (re)posted.
+  const column = reelColumn(platform, target.kind);
+  if (await setReel(projectId, platform, target, reel, sql`(${column} is null or ${column}->>'status' = 'failed')`)) {
+    await enqueueReelPost({ platform, ...target, publishAt });
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+/** Drops an Instagram reel that is still waiting for its time; its queued job then does nothing. */
+export async function cancelReel(projectId: string, platform: ReelPlatform, target: ReelTarget) {
+  await requireLicense();
+  const column = reelColumn(platform, target.kind);
+  await setReel(projectId, platform, target, null, sql`(${column}->>'status' = 'scheduled' and ${column}->>'videoId' is null)`);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function deleteProject(projectId: string, stayOnPage = false) {
+  await requireLicense();
+  await db.delete(projects).where(eq(projects.id, projectId));
+  revalidatePath("/");
+  if (stayOnPage) return;
+  redirect("/");
+}
+
+// -------------------------------------------------------------- language
+
+export async function setLocale(locale: string) {
+  await requireLicense();
+  if (!hasLocale(locale)) return;
+  (await cookies()).set(LOCALE_COOKIE, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+}

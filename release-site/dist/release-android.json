@@ -1,0 +1,54 @@
+{
+  "filename": "KeyZone-Video-Studio-0.7.0-beta1-Android.apk",
+  "version": "0.7.0-beta.1",
+  "platform": "android",
+  "bytes": 70292728,
+  "sha256": "f89db861eaf20ecddc7101706dff97beaede5758c105982abd50383b604ac8d3",
+  "parts": [
+    {
+      "path": "downloads/android/part-000.bin",
+      "bytes": 8388608,
+      "sha256": "029eda88112b4554c57f001da823317bc4b11a0ef2c585982bbf4180b128c606"
+    },
+    {
+      "path": "downloads/android/part-001.bin",
+      "bytes": 8388608,
+      "sha256": "b15dd469e7cc8c13f0132300abfa1e37bc1532c6138f6b00cc3c78f6c7bd8400"
+    },
+    {
+      "path": "downloads/android/part-002.bin",
+      "bytes": 8388608,
+      "sha256": "0419df9c8abacefea8589462986b26bba287443cffabde29a7e21f4857232593"
+    },
+    {
+      "path": "downloads/android/part-003.bin",
+      "bytes": 8388608,
+      "sha256": "c682b5251c6ec7e54eb93f77c000739a8f42e85b299e5c743fb0454df8230a06"
+    },
+    {
+      "path": "downloads/android/part-004.bin",
+      "bytes": 8388608,
+      "sha256": "8e34567e1c7d71f0ea44aef3dbb43daa2a666731b89263d155cd534914ec2358"
+    },
+    {
+      "path": "downloads/android/part-005.bin",
+      "bytes": 8388608,
+      "sha256": "f2d9e4f20390d961941df9bb4bd296eee6490c39ca9f33a1c108ad35382e3d96"
+    },
+    {
+      "path": "downloads/android/part-006.bin",
+      "bytes": 8388608,
+      "sha256": "3fe085994e970a2cc24511d1fb13d0b2a854b91886103ba8a514a8a57180f25f"
+    },
+    {
+      "path": "downloads/android/part-007.bin",
+      "bytes": 8388608,
+      "sha256": "5fe071e76060ec940e89995b4947d81c427718659d2e93c81c1969daa94e5942"
+    },
+    {
+      "path": "downloads/android/part-008.bin",
+      "bytes": 3183864,
+      "sha256": "9cd8fe46f1bfe46ae615b318c1578cb030ded52e41f791256516902d08c89449"
+    }
+  ]
+}

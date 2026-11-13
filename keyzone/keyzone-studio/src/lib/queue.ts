@@ -1,0 +1,185 @@
+import { PgBoss } from "pg-boss";
+import { env } from "@/lib/env";
+
+export const QUEUES = {
+  scriptGenerate: "script-generate",
+  characterReference: "character-reference",
+  sceneProduce: "scene-produce",
+  projectRender: "project-render",
+  projectPosts: "project-posts",
+  projectThumbnail: "project-thumbnail",
+  projectShorts: "project-shorts",
+  shortRender: "short-render",
+  reelPost: "reel-post",
+} as const;
+
+export interface ScriptGenerateJob {
+  projectId: string;
+}
+export interface CharacterReferenceJob {
+  characterId: string;
+}
+export interface SceneProduceJob {
+  sceneId: string;
+}
+export interface ProjectRenderJob {
+  projectId: string;
+}
+export interface ProjectPostsJob {
+  projectId: string;
+}
+export interface ProjectThumbnailJob {
+  projectId: string;
+}
+export interface ProjectShortsJob {
+  projectId: string;
+}
+export interface ShortRenderJob {
+  shortId: string;
+}
+/** A finished vertical video ("project") or one of its Shorts, posted as a reel. */
+export interface ReelPostJob {
+  platform: "facebook" | "instagram";
+  kind: "project" | "short";
+  id: string;
+  /**
+   * The publishAt the reel had when this job was queued. A job whose reel has since been
+   * rescheduled or cancelled finds a different value and does nothing.
+   */
+  publishAt: string | null;
+}
+
+const globalForBoss = globalThis as unknown as { boss?: Promise<PgBoss> };
+
+async function createBoss() {
+  const boss = new PgBoss(env().DATABASE_URL);
+  boss.on("error", (err) => console.error("[pg-boss]", err));
+  await boss.start();
+  // Muse jobs are slow; give them room before pg-boss expires and retries them.
+  await boss.createQueue(QUEUES.scriptGenerate, { retryLimit: 1, expireInSeconds: 15 * 60 });
+  await boss.createQueue(QUEUES.characterReference, { retryLimit: 1, expireInSeconds: 15 * 60 });
+  await boss.createQueue(QUEUES.sceneProduce, {
+    retryLimit: 1,
+    retryDelay: 30,
+    expireInSeconds: 40 * 60,
+  });
+  // One queued render per project: duplicate sends while one is waiting are dropped.
+  await boss.createQueue(QUEUES.projectRender, {
+    policy: "short",
+    retryLimit: 1,
+    expireInSeconds: 20 * 60,
+  });
+  await boss.createQueue(QUEUES.projectThumbnail, {
+    policy: "short",
+    retryLimit: 1,
+    expireInSeconds: 15 * 60,
+  });
+  await boss.createQueue(QUEUES.projectPosts, {
+    policy: "short",
+    retryLimit: 1,
+    expireInSeconds: 10 * 60,
+  });
+  await boss.createQueue(QUEUES.projectShorts, {
+    policy: "short",
+    retryLimit: 1,
+    expireInSeconds: 10 * 60,
+  });
+  await boss.createQueue(QUEUES.shortRender, {
+    policy: "short",
+    retryLimit: 1,
+    expireInSeconds: 15 * 60,
+  });
+  // Not retried by pg-boss: a second try after a partial upload would post the reel twice.
+  // Instagram reels wait here until their time, up to 29 days: kept longer than the 14-day default.
+  await boss.createQueue(QUEUES.reelPost, {
+    retryLimit: 0,
+    expireInSeconds: 30 * 60,
+    retentionSeconds: 30 * 24 * 60 * 60,
+  });
+  return boss;
+}
+
+export function getBoss() {
+  globalForBoss.boss ??= createBoss().catch((err) => {
+    globalForBoss.boss = undefined;
+    throw err;
+  });
+  return globalForBoss.boss;
+}
+
+export async function enqueueScript(projectId: string) {
+  const boss = await getBoss();
+  await boss.send(QUEUES.scriptGenerate, { projectId } satisfies ScriptGenerateJob);
+}
+
+export async function enqueueCharacterReference(characterId: string) {
+  const boss = await getBoss();
+  await boss.send(QUEUES.characterReference, { characterId } satisfies CharacterReferenceJob);
+}
+
+/** Enqueues all scenes in one insert instead of one round trip per scene. */
+export async function enqueueScenes(sceneIds: string[], opts: { startAfterSeconds?: number } = {}) {
+  if (sceneIds.length === 0) return;
+  const boss = await getBoss();
+  const startAfter = opts.startAfterSeconds ? new Date(Date.now() + opts.startAfterSeconds * 1000) : undefined;
+  await boss.insert(
+    QUEUES.sceneProduce,
+    sceneIds.map((sceneId) => ({ data: { sceneId } satisfies SceneProduceJob, startAfter })),
+  );
+}
+
+/** Takes these scenes' waiting jobs off the queue; a job already running finishes on its own. */
+export async function cancelSceneJobs(sceneIds: string[]) {
+  if (sceneIds.length === 0) return;
+  const boss = await getBoss();
+  const wanted = new Set(sceneIds);
+  // One read of every waiting scene job (a short list across all projects), matched in memory.
+  const waiting = await boss.findJobs<SceneProduceJob>(QUEUES.sceneProduce, { queued: true });
+  const ids = waiting.filter((job) => wanted.has(job.data.sceneId)).map((job) => job.id);
+  if (ids.length) await boss.cancel(QUEUES.sceneProduce, ids);
+}
+
+export async function enqueueRender(projectId: string) {
+  const boss = await getBoss();
+  await boss.send(QUEUES.projectRender, { projectId } satisfies ProjectRenderJob, {
+    singletonKey: projectId,
+  });
+}
+
+export async function enqueuePosts(projectId: string) {
+  const boss = await getBoss();
+  await boss.send(QUEUES.projectPosts, { projectId } satisfies ProjectPostsJob, {
+    singletonKey: projectId,
+  });
+}
+
+export async function enqueueThumbnail(projectId: string) {
+  const boss = await getBoss();
+  await boss.send(QUEUES.projectThumbnail, { projectId } satisfies ProjectThumbnailJob, {
+    singletonKey: projectId,
+  });
+}
+
+export async function enqueueShortsPlan(projectId: string) {
+  const boss = await getBoss();
+  await boss.send(QUEUES.projectShorts, { projectId } satisfies ProjectShortsJob, {
+    singletonKey: projectId,
+  });
+}
+
+/** Enqueues the Shorts' renders in one insert; each Short renders on its own. */
+export async function enqueueShortRenders(shortIds: string[]) {
+  if (shortIds.length === 0) return;
+  const boss = await getBoss();
+  await boss.insert(
+    QUEUES.shortRender,
+    shortIds.map((shortId) => ({ data: { shortId } satisfies ShortRenderJob, singletonKey: shortId })),
+  );
+}
+
+/** Queues a reel upload; an Instagram reel with a publish time waits in the queue until then. */
+export async function enqueueReelPost(job: ReelPostJob) {
+  const boss = await getBoss();
+  const startAfter = job.platform === "instagram" && job.publishAt ? new Date(job.publishAt) : undefined;
+  await boss.send(QUEUES.reelPost, job satisfies ReelPostJob, { startAfter });
+}

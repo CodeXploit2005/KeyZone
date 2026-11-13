@@ -1,0 +1,26 @@
+# A persistent disk requires a paid Render service. Review the plan in Render.
+services:
+  - type: web
+    name: keyzone-portal
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    disk:
+      name: keyzone-licenses
+      mountPath: /var/data/keyzone
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: HOST
+        value: 0.0.0.0
+      - key: KEYZONE_LICENSE_DB
+        value: /var/data/keyzone/licenses.sqlite
+      - key: KEYZONE_SITE_DIR
+        value: ./release-site/dist
+      - key: KEYZONE_ADMIN_PASSWORD
+        sync: false

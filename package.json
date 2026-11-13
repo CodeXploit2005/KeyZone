@@ -1,0 +1,11 @@
+{
+  "name": "keyzone-distribution",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.14.0 <25" },
+  "scripts": {
+    "start": "node license-server/server.mjs",
+    "build": "node scripts/verify-distribution.mjs",
+    "test": "node --test license-server/test.mjs"
+  }
+}

@@ -1,0 +1,17 @@
+node_modules/
+.next*/
+out/
+*.tsbuildinfo
+*.log
+*.pid
+.env
+.env.*
+!.env.example
+data/
+*.sqlite*
+__pycache__/
+.venv/
+license-config.json
+activation.json
+web.pid
+worker.pid
