@@ -34,9 +34,13 @@ final class MediaRenderer {
     MediaRenderer(Context context) throws Exception {this.context=context;store=Store.get(context);}
     static void run(String... args) throws Exception {
         if(JobService.cancelled())throw new Exception("Đã dừng tác vụ.");
-        FFmpegSession session=FFmpegKit.executeWithArguments(args);
+        // Keep rendering inside the background service, with errors available for diagnostics.
+        String[] command=new String[args.length+3];
+        command[0]="-hide_banner";command[1]="-loglevel";command[2]="error";
+        System.arraycopy(args,0,command,3,args.length);
+        FFmpegSession session=FFmpegKit.executeWithArguments(command);
         if(!ReturnCode.isSuccess(session.getReturnCode())&&!JobService.cancelled()){
-            String[] fallback=args.clone();boolean hardware=false;for(int i=0;i<fallback.length;i++)if(fallback[i].equals("h264_mediacodec")){fallback[i]="libopenh264";hardware=true;}
+            String[] fallback=command.clone();boolean hardware=false;for(int i=0;i<fallback.length;i++)if(fallback[i].equals("h264_mediacodec")){fallback[i]="libopenh264";hardware=true;}
             if(hardware)session=FFmpegKit.executeWithArguments(fallback);
         }
         if(!ReturnCode.isSuccess(session.getReturnCode())){

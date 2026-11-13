@@ -27,7 +27,7 @@ Theo [Render Free](https://render.com/docs/free), dịch vụ ngủ sau 15 phút
 
 Render chỉ chạy máy chủ cấp key và website. Video và tài khoản Muse tiếp tục chạy/lưu trên thiết bị khách.
 
-## Windows 0.7.4 và Android 0.7.3-beta.1
+## Windows 0.7.5 và Android 0.7.5-beta.1
 
 Windows 0.7.3 có form nhập key trước khi vào studio và sửa lỗi logo bị chặn bởi proxy và trỏ tới `https://keyzone-6laz.onrender.com`. Bản 0.7.0 cũ chưa có bản quyền: người đang dùng cần tải bộ cài mới trên website và cài cập nhật. Installer giữ dữ liệu dự án tại thư mục dữ liệu riêng, không cần gỡ bản cũ trước. Android 0.7.3-beta.1 đã có form nhập key, đồng bộ thời hạn, gỡ kích hoạt và kiểm tra key trong tác vụ nền. Phiên kích hoạt được mã hóa bằng Android Keystore; cần kiểm tra thêm trên điện thoại thật.
 
@@ -85,3 +85,7 @@ Windows cho phép ảnh trong `/brand/` tải trực tiếp, không bị kiểm 
 ### Cập nhật Windows 0.7.4
 
 Phiên kích hoạt đã lưu trên máy được dùng khi tải lại hoặc đổi trình duyệt. Giao diện nhận kết quả xác minh của request từ máy chủ nên không nháy form nhập key khi phiên còn hợp lệ. Mỗi key chỉ dùng trên một máy; máy thứ hai nhận thông báo "Key đang được sử dụng trên thiết bị khác" và máy thứ nhất tiếp tục dùng. Key cũ có nhiều thiết bị chỉ chấp nhận thiết bị đăng ký đầu tiên; quản trị có thể gỡ máy để chuyển sang máy mới. Khi bị thu hồi hoặc hết hạn, ứng dụng vẫn bị khóa. Admin mobile đưa thanh Không gian làm việc lên đầu và có nút đăng xuất ở thanh dưới.
+
+### Ghép video chạy nền trong bản 0.7.5
+
+Windows ẩn cửa sổ FFmpeg và ffprobe khi ghép/kiểm tra video. Android tiếp tục chạy FFmpegKit trong dịch vụ nền của ứng dụng, giảm log không cần thiết và giữ xử lý lỗi cùng fallback bộ mã hóa. APK mới dùng cùng chữ ký để cài cập nhật; chưa thử ghép trên điện thoại thật.

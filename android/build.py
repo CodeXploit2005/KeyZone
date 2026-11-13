@@ -34,7 +34,7 @@ def build():
     run([BIN / 'aapt2.exe', 'compile', '--dir', merged_res, '-o', resources])
     linked = WORK / 'resources.apk'
     run([BIN / 'aapt2.exe', 'link', '-o', linked, '-I', SDK, '--manifest', APP / 'AndroidManifest.xml',
-         '--min-sdk-version', '29', '--target-sdk-version', '35', '--version-code', '8', '--version-name', '0.7.3-beta.1',
+         '--min-sdk-version', '29', '--target-sdk-version', '35', '--version-code', '9', '--version-name', '0.7.5-beta.1',
          '--java', generated, '--extra-packages', 'com.arthenica.ffmpegkit', '-R', resources, '--auto-add-overlay'])
     classpath = os.pathsep.join(str(p) for p in [SDK, TOOLS / 'ffmpeg/classes.jar', TOOLS / 'smart-exception-java-0.2.1.jar'])
     files = sorted((APP / 'src').rglob('*.java')) + sorted(generated.rglob('*.java'))
@@ -63,10 +63,10 @@ def build():
     keystore = private / 'keyzone-release.p12'
     if not keystore.exists():
         run([JDK / 'bin/keytool.exe', '-genkeypair', '-keystore', keystore, '-storetype', 'PKCS12', '-alias', 'keyzone', '-keyalg', 'RSA', '-keysize', '3072', '-validity', '10000', '-dname', 'CN=KeyZone Video Studio', '-storepass:env', 'KEYZONE_ANDROID_KEYSTORE_PASS', '-keypass:env', 'KEYZONE_ANDROID_KEYSTORE_PASS'],env=env)
-    result = BUILD / 'KeyZone-Video-Studio-0.7.3-beta1-Android.apk'
+    result = BUILD / 'KeyZone-Video-Studio-0.7.5-beta1-Android.apk'
     run([JDK / 'bin/java.exe', '-jar', BIN / 'lib/apksigner.jar', 'sign', '--ks', keystore, '--ks-key-alias', 'keyzone', '--ks-pass', 'env:KEYZONE_ANDROID_KEYSTORE_PASS', '--key-pass', 'env:KEYZONE_ANDROID_KEYSTORE_PASS', '--out', result, aligned],env=env)
     run([JDK / 'bin/java.exe', '-jar', BIN / 'lib/apksigner.jar', 'verify', '--verbose', result])
-    release={'filename':result.name,'version':'0.7.3-beta.1','platform':'android','bytes':result.stat().st_size,'sha256':hashlib.sha256(result.read_bytes()).hexdigest()}
+    release={'filename':result.name,'version':'0.7.5-beta.1','platform':'android','bytes':result.stat().st_size,'sha256':hashlib.sha256(result.read_bytes()).hexdigest()}
     (BUILD / 'release.json').write_text(json.dumps(release,indent=2),encoding='utf-8');print('APK',json.dumps(release),flush=True)
 
 

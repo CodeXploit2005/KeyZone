@@ -1,3 +1,11 @@
+# Windows 0.7.5 and Android 0.7.5-beta.1 — 2026-11-14
+
+Windows hides FFmpeg/ffprobe consoles with windowsHide while preserving stdout/stderr and failure reporting. Actual two-clip merge passed and output duration/audio were verified. The bundled worker includes the hidden-process option.
+Android uses in-process FFmpegKit inside JobService; no external console/activity is launched. FFmpeg calls now suppress banners and non-error logs, including hardware-codec fallback. APK compiled, signature matched the previous release and native alignment verified. Physical Android rendering remains untested.
+Windows installer: 305639568 bytes; SHA256 6c25c43783915e09394e7688b74d3fef51b71a421aa19fee2636717ea127099e.
+Android APK: 70309112 bytes; SHA256 a051d38ce3e1bbae6c3045db84999a3cadc9636c195e5241a11d70e17d032cf1.
+The verbose portal announcement removed at the user's request stays removed.
+
 # Windows 0.7.4 and single-device policy — 2026-11-13
 
 Installer: release-build/KeyZone-Video-Studio-Setup-0.7.4.exe; 305639476 bytes; SHA256 db610748a3ef0c2e88a6ba0f18235ce801cbbc5101eff2424b71253d4dc8f5fd.
