@@ -376,7 +376,6 @@ export default function ReleasePage() {
 
         {/* DOWNLOAD COMMAND CENTER (Matches Reference Image 1) */}
         <section id="download" className="mx-auto max-w-5xl px-6 py-20">
-          <p className="mb-6 rounded-xl border border-amber-300/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Windows 0.7.4 giữ phiên kích hoạt khi tải lại trang và bỏ nháy form nhập key. Mỗi key chỉ dùng trên một máy; máy thứ hai sẽ nhận thông báo key đang được sử dụng. Android 0.7.3-beta.1 bổ sung nhập key, kiểm tra thời hạn và gỡ kích hoạt thiết bị. Hãy tải bản mới để cập nhật; Android vẫn cần kiểm tra thêm trên điện thoại thật.</p>
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-[#1e163b] px-3.5 py-1.5 text-xs font-semibold text-violet-200">
               <TrendingUp className="h-3.5 w-3.5 text-violet-300" />
