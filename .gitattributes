@@ -1,0 +1,8 @@
+* text=auto
+*.bin -text
+*.png -text
+*.jpg -text
+*.webp -text
+*.ttf -text
+*.woff2 -text
+*.ico -text

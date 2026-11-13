@@ -4,6 +4,7 @@ import { createLicenseServer } from './server.mjs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 test('admin authentication, activation, device limits, revocation and expiry', async () => {
   let time = Date.now();
@@ -73,4 +74,58 @@ test('licenses and device sessions survive server restart', async () => {
     const check = await fetch(base + '/v1/verify', { method: 'POST', body: JSON.stringify({ token, device }) });
     assert.equal((await check.json()).valid, true);
   } finally { if (server?.listening) await new Promise(r => server.close(r)); rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('download website, admin assets and installer parts are served from one origin', async () => {
+  const siteDirectory = fileURLToPath(new URL('../release-site/dist/', import.meta.url));
+  const server = createLicenseServer({ database: ':memory:', password: 'test-only-static-site-password', siteDirectory });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    for (const path of ['/', '/admin', '/admin.js', '/admin.css', '/healthz', '/release-windows.json', '/release-android.json']) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 200, path);
+      const content = await response.text();
+      assert.ok(content.length > 0);
+      if (path === '/') assert.ok(content.includes('KeyZone'));
+      if (path === '/admin') { assert.ok(content.includes('id="login"')); assert.ok(response.headers.get('content-security-policy').includes("script-src 'self'")); }
+    }
+    const download = await fetch(base + '/downloads/windows/part-000.bin', { method: 'HEAD' });
+    assert.equal(download.status, 200);
+    assert.equal(Number(download.headers.get('content-length')), 8388608);
+    assert.equal((await fetch(base + '/missing-file.bin')).status, 404);
+    assert.equal((await fetch(base + '/api/admin/keys')).status, 401);
+  } finally { await new Promise(r => server.close(r)); }
+});
+
+test('Windows client activates against the real API and loses access after admin revocation', async () => {
+  const { activation, licenseRequest, saveActivation, requireLicense } = await import('../keyzone/keyzone-studio/src/lib/license.ts');
+  const dir = mkdtempSync(join(tmpdir(), 'keyzone-client-test-'));
+  const oldUrl = process.env.KEYZONE_LICENSE_URL, oldDir = process.env.KEYZONE_LICENSE_DIR;
+  const password = 'test-only-client-admin-password';
+  const server = createLicenseServer({ database: ':memory:', password });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  process.env.KEYZONE_LICENSE_URL = base; process.env.KEYZONE_LICENSE_DIR = dir;
+  try {
+    const login = await fetch(base + '/api/admin/login', { method: 'POST', headers: { Origin: 'http://127.0.0.1:4320' }, body: JSON.stringify({ password }) });
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const headers = { Origin: 'http://127.0.0.1:4320', Cookie: cookie };
+    const created = await fetch(base + '/api/admin/keys', { method: 'POST', headers, body: JSON.stringify({ customer: 'Windows client', maxDevices: 1, expiresAt: new Date(Date.now() + 86400000).toISOString() }) });
+    const { id, key } = await created.json();
+    assert.equal((await licenseRequest('verify')).valid, false);
+    const activated = await licenseRequest('activate', { key });
+    assert.equal(activated.valid, true);
+    await saveActivation({ device: (await activation()).device, token: activated.token });
+    assert.equal((await requireLicense()).customer, 'Windows client');
+    await fetch(base + '/api/admin/keys/' + id, { method: 'PATCH', headers, body: JSON.stringify({ action: 'revoke' }) });
+    await assert.rejects(requireLicense, /thu hồi/);
+    await new Promise(r => server.close(r));
+    assert.equal((await licenseRequest('verify')).valid, false);
+  } finally {
+    if (server.listening) await new Promise(r => server.close(r));
+    if (oldUrl === undefined) delete process.env.KEYZONE_LICENSE_URL; else process.env.KEYZONE_LICENSE_URL = oldUrl;
+    if (oldDir === undefined) delete process.env.KEYZONE_LICENSE_DIR; else process.env.KEYZONE_LICENSE_DIR = oldDir;
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
