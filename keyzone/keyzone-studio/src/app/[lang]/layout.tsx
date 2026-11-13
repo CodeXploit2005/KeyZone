@@ -12,7 +12,7 @@ import { WorkspaceBar } from "@/components/workspace-bar";
 import { NavigationMotion } from "@/components/navigation-motion";
 import { NicheSwitcherSkeleton } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LicenseGate } from "@/components/license-gate";
+import { VerifiedLicenseGate, StudioLoading } from "@/components/verified-license-gate";
 import { LOCALES } from "@/i18n/config";
 import { LocaleProvider } from "@/i18n/client";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
     <html lang={locale} suppressHydrationWarning className="h-full antialiased">
       <head><script dangerouslySetInnerHTML={{ __html: themeBootstrap }} /></head>
       <body className="min-h-full font-sans">
-        <LicenseGate>
+        <Suspense fallback={<StudioLoading />}><VerifiedLicenseGate>
         <LocaleProvider locale={locale}>
         <Sky />
         <aside className="studio-sidebar hidden flex-col gap-6 overflow-y-auto px-4 py-6 lg:flex">
@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
         </div>
         <div className="lg:hidden"><NavLinks orientation="mobile" /></div>
         </LocaleProvider>
-        </LicenseGate>
+        </VerifiedLicenseGate></Suspense>
       </body>
     </html>
   );

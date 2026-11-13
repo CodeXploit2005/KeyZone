@@ -21,6 +21,8 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
     await db.exec(SCHEMA);
     const columns = await db.prepare('PRAGMA table_info(licenses)').all();
     if (!columns.some(column => column.name === 'key_ciphertext')) await db.exec('ALTER TABLE licenses ADD COLUMN key_ciphertext TEXT');
+    // Apply the single-device policy to existing licenses as well as new ones.
+    await db.prepare('UPDATE licenses SET max_devices=1 WHERE max_devices<>1').run();
     // A single DELETE atomically removes sessions as well, including on existing databases.
     await db.prepare(`CREATE TRIGGER IF NOT EXISTS delete_license_devices BEFORE DELETE ON licenses
       BEGIN DELETE FROM devices WHERE license_id=OLD.id; END`).run();
@@ -58,7 +60,7 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
   function fields(data) {
     const expiry = Date.parse(data.expiresAt);
     if (!Number.isFinite(expiry) || expiry <= now() || expiry > now() + 10 * 366 * 86400000) fail('Hạn dùng phải trong tương lai, tối đa 10 năm.');
-    if (!Number.isInteger(data.maxDevices) || data.maxDevices < 1 || data.maxDevices > 100) fail('Số thiết bị từ 1 đến 100.');
+    if (data.maxDevices !== 1) fail('Mỗi key chỉ dùng trên một máy.');
     if (typeof data.customer !== 'string' || !data.customer.trim() || data.customer.length > 120) fail('Nhập tên khách hàng (tối đa 120 ký tự).');
     return [data.customer.trim(), expiry, data.maxDevices];
   }
@@ -96,7 +98,7 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
           await initialize();
           return send({ keys: (await db.prepare(`SELECT l.id,l.prefix,l.customer,l.expires_at,l.max_devices,l.revoked,l.created_at,
             CASE WHEN l.key_ciphertext IS NULL THEN 0 ELSE 1 END AS can_copy,
-            (SELECT count(*) FROM devices d WHERE d.license_id=l.id) AS device_count FROM licenses l ORDER BY created_at DESC`).all()) });
+            CASE WHEN EXISTS(SELECT 1 FROM devices d WHERE d.license_id=l.id) THEN 1 ELSE 0 END AS device_count FROM licenses l ORDER BY created_at DESC`).all()) });
         }
         if (req.method === 'POST' && url.pathname === '/api/admin/keys') {
           await initialize();
@@ -136,8 +138,8 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
           else if (data.action === 'update') {
             const [customer, expires, maxDevices] = fields(data);
             const updated = await db.prepare(`UPDATE licenses SET customer=?,expires_at=?,max_devices=?,revoked=0
-              WHERE id=? AND (SELECT count(*) FROM devices WHERE license_id=licenses.id)<=?`)
-              .run(customer, expires, maxDevices, id, maxDevices);
+              WHERE id=?`)
+              .run(customer, expires, maxDevices, id);
             if (!updated.changes) fail('Hãy giải phóng thiết bị trước khi giảm giới hạn.');
           } else fail('Thao tác không hợp lệ.');
           return send({ ok: true });
@@ -155,19 +157,25 @@ export function createLicenseServer({ database = './data/licenses.sqlite', datab
           const token = random();
           const inserted = await db.prepare(`INSERT INTO devices(license_id,device,token_hash,last_seen)
             SELECT id,?,?,? FROM licenses WHERE id=? AND revoked=0 AND expires_at>? AND
-            (EXISTS(SELECT 1 FROM devices WHERE license_id=licenses.id AND device=?) OR
-             (SELECT count(*) FROM devices WHERE license_id=licenses.id)<max_devices)
+            (NOT EXISTS(SELECT 1 FROM devices WHERE license_id=licenses.id) OR
+             ?=(SELECT device FROM devices WHERE license_id=licenses.id ORDER BY rowid LIMIT 1))
             ON CONFLICT(license_id,device) DO UPDATE SET token_hash=excluded.token_hash,last_seen=excluded.last_seen`)
             .run(data.device, hash(token), now(), row.id, now(), data.device);
-          if (!inserted.changes) fail('Key không còn hiệu lực hoặc đã đạt giới hạn thiết bị.', 403);
+          if (!inserted.changes) {
+            checkLicense(await db.prepare('SELECT * FROM licenses WHERE id=?').get(row.id));
+            fail('Key đang được sử dụng trên thiết bị khác. Mỗi key chỉ dùng trên một máy.', 403);
+          }
           return send({ ...result, token });
         }
         if (typeof data.token !== 'string' || !/^[a-f0-9]{64}$/.test(data.token)) fail('Phiên không hợp lệ.', 401);
-        const row = (await db.prepare('SELECT l.*,d.token_hash FROM licenses l JOIN devices d ON l.id=d.license_id WHERE d.token_hash=? AND d.device=?').get(hash(data.token), data.device));
+        const row = (await db.prepare(`SELECT l.*,d.token_hash,
+          (SELECT device FROM devices WHERE license_id=l.id ORDER BY rowid LIMIT 1) AS primary_device
+          FROM licenses l JOIN devices d ON l.id=d.license_id WHERE d.token_hash=? AND d.device=?`).get(hash(data.token), data.device));
         if (url.pathname === '/v1/deactivate') {
           (await db.prepare('DELETE FROM devices WHERE token_hash=? AND device=?').run(hash(data.token), data.device)); return send({ ok: true });
         }
         const result = checkLicense(row);
+        if (row.primary_device !== data.device) fail('Key đang được sử dụng trên thiết bị khác. Mỗi key chỉ dùng trên một máy.', 403);
         (await db.prepare('UPDATE devices SET last_seen=? WHERE token_hash=? AND last_seen<?').run(now(), hash(data.token), now() - 300000));
         return send(result);
       }

@@ -225,11 +225,12 @@
 
               <label>Giới hạn thiết bị
                 <div class="device-input">
-                  <input id="maxDevices" type="number" min="1" max="100" value="1" required inputmode="numeric">
+                  <input id="maxDevices" type="number" min="1" max="1" value="1" readonly required inputmode="numeric" aria-describedby="singleDeviceNote">
                   <span>thiết bị / key</span>
                 </div>
               </label>
 
+              <p id="singleDeviceNote" class="form-note">Mỗi key chỉ dùng trên một máy. Máy khác sẽ nhận thông báo key đang được sử dụng.</p>
               <button type="submit" class="primary submit-button">＋ Tạo key kích hoạt</button>
               <p class="form-note">◇ Có thể sao chép lại key trong danh sách sau khi tạo.</p>
             </div>
@@ -319,7 +320,7 @@
             <button type="button" data-extend="90">＋90 ngày</button>
           </div>
           <label>Giới hạn thiết bị
-            <input id="editDevices" type="number" min="1" max="100" required inputmode="numeric">
+            <input id="editDevices" type="number" min="1" max="1" value="1" readonly required inputmode="numeric">
           </label>
           <p id="editError" class="error-text" role="alert"></p>
           <div class="dialog-actions">
@@ -340,6 +341,7 @@
     <button class="selected" data-view-button="list"><span>▦</span>Danh sách key</button>
     <button data-view-button="create"><span>＋</span>Tạo key mới</button>
     <a href="/"><span>↓</span>Tải ứng dụng</a>
+    <button id="mobileLogout" type="button" hidden><span>↪</span>Đăng xuất</button>
   </nav>
 </body>
 </html>

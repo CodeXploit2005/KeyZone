@@ -7,6 +7,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { tursoDatabase } from './database.mjs';
+import { SCHEMA } from './database.mjs';
+import { createHash } from 'node:crypto';
 import { formatDate, parseDate, relativeExpiry, DAY } from './public/admin-time.js';
 
 test('typed expiry dates reject impossible dates and preserve local time', () => {
@@ -66,6 +68,7 @@ for (const remote of [false, true]) test(`admin authentication, activation, devi
     assert.equal(created.status, 201);
     const key = created.body.key, id = created.body.id, device = 'a'.repeat(64), other = 'b'.repeat(64);
     assert.equal((await request('/api/admin/keys', 'POST', { ...fields, customKey: 'short' })).status, 400);
+    assert.equal((await request('/api/admin/keys', 'POST', { ...fields, maxDevices: 2 })).status, 400);
     const custom = await request('/api/admin/keys', 'POST', { ...fields, customKey: 'kz-customer-manual-2026' });
     assert.equal(custom.status, 201); assert.equal(custom.body.key, 'KZ-CUSTOMER-MANUAL-2026');
     assert.equal((await request('/api/admin/keys', 'POST', { ...fields, customKey: 'KZ-CUSTOMER-MANUAL-2026' })).status, 409);
@@ -80,7 +83,9 @@ for (const remote of [false, true]) test(`admin authentication, activation, devi
     const activated = await request('/v1/activate', 'POST', { key, device });
     assert.equal(activated.body.valid, true);
     const token = activated.body.token;
-    assert.equal((await request('/v1/activate', 'POST', { key, device: other })).status, 403);
+    const denied = await request('/v1/activate', 'POST', { key, device: other });
+    assert.equal(denied.status, 403); assert.match(denied.body.error, /Key đang được sử dụng/);
+    assert.equal((await request('/v1/verify', 'POST', { token, device })).body.valid, true, 'second device must not evict the first device');
     assert.equal((await request('/v1/verify', 'POST', { token, device: other })).status, 401);
     assert.equal((await request('/v1/verify', 'POST', { token, device })).body.valid, true);
     await request('/api/admin/keys/' + id, 'PATCH', { action: 'revoke' });
@@ -227,4 +232,31 @@ test('Windows client activates against the real API and loses access after admin
     if (oldDir === undefined) delete process.env.KEYZONE_LICENSE_DIR; else process.env.KEYZONE_LICENSE_DIR = oldDir;
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+for (const remote of [false,true]) test(`single-device policy applies to legacy multi-device keys (${remote?'Turso':'SQLite'})`, async()=>{
+  const fixture=remote?tursoFixture():null;
+  const db=fixture?fixture.driver:new DatabaseSync(':memory:');
+  await db.exec(SCHEMA);
+  const hash=value=>createHash('sha256').update(value).digest('hex');
+  const id='e'.repeat(64), key='KZ-LEGACY-MULTI-DEVICE',first='c'.repeat(64),second='d'.repeat(64),one='a'.repeat(64),two='b'.repeat(64);
+  await db.prepare('INSERT INTO licenses(id,key_hash,prefix,customer,expires_at,max_devices,revoked,created_at) VALUES(?,?,?,?,?,?,0,?)').run(id,hash(key),'KZ-LEGACY','Existing customer',Date.now()+86400000,5,Date.now());
+  await db.prepare('INSERT INTO devices VALUES(?,?,?,?)').run(id,first,hash(one),Date.now());
+  await db.prepare('INSERT INTO devices VALUES(?,?,?,?)').run(id,second,hash(two),Date.now());
+  const server=createLicenseServer({password:'legacy-single-device-test',databaseAdapter:db});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
+  const post=async(path,body,headers={})=>fetch(base+path,{method:'POST',headers,body:JSON.stringify(body)});
+  try{
+    assert.equal((await (await post('/v1/verify',{device:first,token:one})).json()).valid,true);
+    let rejected=await post('/v1/verify',{device:second,token:two});assert.equal(rejected.status,403);assert.match((await rejected.json()).error,/Key đang được sử dụng/);
+    rejected=await post('/v1/activate',{device:second,key});assert.equal(rejected.status,403);assert.match((await rejected.json()).error,/Key đang được sử dụng/);
+    const login=await post('/api/admin/login',{password:'legacy-single-device-test'},{Origin:'http://127.0.0.1:4320'});
+    const headers={Origin:'http://127.0.0.1:4320',Cookie:login.headers.get('set-cookie').split(';')[0]};
+    const keys=(await (await fetch(base+'/api/admin/keys',{headers})).json()).keys;
+    assert.equal(keys[0].max_devices,1);assert.equal(keys[0].device_count,1);
+    const updated=await fetch(base+'/api/admin/keys/'+id,{method:'PATCH',headers,body:JSON.stringify({action:'update',customer:'Renewed',maxDevices:1,expiresAt:new Date(Date.now()+172800000).toISOString()})});assert.equal(updated.status,200);
+    const reset=await fetch(base+'/api/admin/keys/'+id,{method:'PATCH',headers,body:JSON.stringify({action:'reset'})});assert.equal(reset.status,200);
+    assert.equal((await post('/v1/verify',{device:first,token:one})).status,401);
+    assert.equal((await post('/v1/activate',{device:second,key})).status,200);
+  }finally{await new Promise(r=>server.close(r));if(fixture)fixture.close();}
 });

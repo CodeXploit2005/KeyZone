@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE, resolveLocale } from "@/i18n/config";
-import { LICENSE_COOKIE, licenseRequest } from "@/lib/license";
+import { activation, LICENSE_COOKIE, licenseRequest } from "@/lib/license";
 
 // URLs stay locale-free (/projects/123); the proxy rewrites them to app/[lang]
 // using the saved choice or the browser's Accept-Language, falling back to English.
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (pathname === "/api/license" || pathname === "/api/local-instance") return NextResponse.next();
-  const token = request.cookies.get(LICENSE_COOKIE)?.value;
+  const token = (await activation()).token || request.cookies.get(LICENSE_COOKIE)?.value;
   const license = token ? await licenseRequest("verify", { token }) : { valid: false };
   const activationPage = /^\/(?:en\/|vi\/)?activate\/?$/.test(pathname);
   if (!license.valid && !activationPage) {
@@ -22,7 +22,10 @@ export async function proxy(request: NextRequest) {
   );
   const url = request.nextUrl.clone();
   if (!/^\/(en|vi)(\/|$)/.test(url.pathname)) url.pathname = `/${locale}${url.pathname === "/" ? "" : url.pathname}`;
-  return NextResponse.rewrite(url);
+  // Overwrite any caller-supplied value: only the verified result may seed the UI.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-keyzone-license-state", encodeURIComponent(JSON.stringify({ valid: license.valid, ...("expiresAt" in license ? { expiresAt: license.expiresAt } : {}), ...("error" in license ? { error: license.error } : {}) })));
+  return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
 }
 
 export const config = {

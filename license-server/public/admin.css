@@ -1469,6 +1469,7 @@ dialog form > p:not(.eyebrow) {
 
 @media (max-width: 760px) {
   .sidebar {
+    display: none;
     position: static;
     width: auto;
     padding: 14px 18px;

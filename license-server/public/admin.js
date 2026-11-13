@@ -4,6 +4,7 @@ let keys = [], editing, filter = 'all', expiryMode = 'relative';
 function auth(value) {
   document.body.dataset.auth = String(value);
   $('workspace').hidden = !value; $('login').hidden = value; $('logout').hidden = !value;
+  $('mobileLogout').hidden = !value;
 }
 function connection(text) { $('connection').lastChild.textContent = ' ' + text; }
 async function api(path, method = 'GET', data) {
@@ -140,6 +141,7 @@ $('copy').onclick = async () => { try { await navigator.clipboard.writeText($('k
 $('closeKey').onclick = () => $('newKey').close();
 $('newKey').addEventListener('close', () => { $('keyValue').textContent = ''; view('list'); });
 $('logout').onclick = async () => { try { await api('logout', 'POST', {}); auth(false); connection('Chưa đăng nhập'); keys = []; $('rows').replaceChildren(); message(''); } catch (e) { message(e.message); } };
+$('mobileLogout').onclick = () => $('logout').onclick();
 $('refresh').onclick = async () => { $('refresh').disabled = true; try { await load(); message('Đã cập nhật danh sách key.'); } catch (e) { message(e.message); } finally { $('refresh').disabled = false; } };
 $('search').oninput = render; syncExpiry(true);
 load().catch(e => { if (!e.message.includes('đăng nhập')) message(e.message); });

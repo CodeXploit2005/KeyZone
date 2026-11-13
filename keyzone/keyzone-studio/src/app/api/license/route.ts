@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { activation, LICENSE_COOKIE, licenseRequest, saveActivation } from "@/lib/license";
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get(LICENSE_COOKIE)?.value;
+  const token = (await activation()).token || request.cookies.get(LICENSE_COOKIE)?.value;
   const result = token ? await licenseRequest("verify", { token }) : { valid: false, error: "Nhập key để sử dụng KeyZone." };
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

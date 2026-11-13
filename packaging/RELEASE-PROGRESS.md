@@ -1,3 +1,11 @@
+# Windows 0.7.4 and single-device policy — 2026-11-13
+
+Installer: release-build/KeyZone-Video-Studio-Setup-0.7.4.exe; 305639476 bytes; SHA256 db610748a3ef0c2e88a6ba0f18235ce801cbbc5101eff2424b71253d4dc8f5fd.
+Actual isolated installation: original PNG logo delivery and application/API gates passed.
+Production app against isolated real PostgreSQL and in-memory license API: saved activation survives absent/stale cookies, reload and process restart; a verified protected HTML document contains no activation form; a second device is denied without evicting the first; spoofed UI-state headers are overwritten; revocation blocks saved sessions. UI SSR test also passed.
+Server suite: new and legacy multi-device key limits, concurrent activations, expiry/revocation and key migration passed. Admin mobile topbar position y=0 at 390px, fixed device count and logout verified in browser. Screenshot: ui-previews/admin-mobile-top-fixed.jpg.
+Permissions-Policy warnings could not be reproduced: portal/admin responses contain no such header and the tested admin browser console showed none. No third-party security headers were removed.
+
 # Windows 0.7.3 and Android 0.7.3-beta.1 — 2026-11-13
 
 Windows: release-build/KeyZone-Video-Studio-Setup-0.7.3.exe
